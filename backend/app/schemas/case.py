@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models.case import CaseStatus
+from app.models.event import EventType, EventSource
 
 
 class CaseCreate(BaseModel):
@@ -39,6 +41,64 @@ class CaseCreate(BaseModel):
                 "issue_description": "The same fault returned after two repairs.",
             }
         }
+    )
+
+
+class CaseUpdate(BaseModel):
+    """Schema for partially updating an existing repair case (PATCH)."""
+    title: Optional[str] = Field(
+        None,
+        description="Updated title for the repair case.",
+        min_length=1,
+        max_length=255,
+    )
+    product_name: Optional[str] = Field(
+        None,
+        description="Updated product name.",
+        min_length=1,
+        max_length=255,
+    )
+    issue_description: Optional[str] = Field(
+        None,
+        description="Updated issue description.",
+        min_length=1,
+    )
+
+    @field_validator("title", "product_name", "issue_description")
+    @classmethod
+    def validate_not_whitespace_if_provided(cls, value: Optional[str], info) -> Optional[str]:
+        if value is not None:
+            stripped = value.strip()
+            if not stripped:
+                raise ValueError(f"{info.field_name} cannot be empty or whitespace only")
+            return stripped
+        return value
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "title": "Updated repair case title",
+                "issue_description": "Additional fault details observed after inspection.",
+            }
+        },
+    )
+
+
+class CaseStatusUpdate(BaseModel):
+    """Schema for updating the workflow status of a case."""
+    status: CaseStatus = Field(
+        ...,
+        description="Target status for the repair case.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "status": "UNDER_REVIEW"
+            }
+        },
     )
 
 

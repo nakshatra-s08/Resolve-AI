@@ -2,6 +2,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, Text, DateTime, Enum as SQLEnum
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -15,6 +16,52 @@ class CaseStatus(str, enum.Enum):
     FOLLOW_UP_DUE = "FOLLOW_UP_DUE"
     RESOLVED = "RESOLVED"
     CLOSED = "CLOSED"
+
+
+# Documented valid status transitions dictionary
+# Each status maps to the set of allowed destination statuses.
+VALID_STATUS_TRANSITIONS = {
+    CaseStatus.NEW: {
+        CaseStatus.COLLECTING_EVIDENCE,
+        CaseStatus.UNDER_REVIEW,
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.COLLECTING_EVIDENCE: {
+        CaseStatus.UNDER_REVIEW,
+        CaseStatus.ACTION_READY,
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.UNDER_REVIEW: {
+        CaseStatus.COLLECTING_EVIDENCE,
+        CaseStatus.ACTION_READY,
+        CaseStatus.RESOLVED,
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.ACTION_READY: {
+        CaseStatus.COLLECTING_EVIDENCE,
+        CaseStatus.AWAITING_RESPONSE,
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.AWAITING_RESPONSE: {
+        CaseStatus.FOLLOW_UP_DUE,
+        CaseStatus.UNDER_REVIEW,
+        CaseStatus.RESOLVED,
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.FOLLOW_UP_DUE: {
+        CaseStatus.UNDER_REVIEW,
+        CaseStatus.AWAITING_RESPONSE,
+        CaseStatus.RESOLVED,
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.RESOLVED: {
+        CaseStatus.UNDER_REVIEW,  # Allowed reopening when issue recurs
+        CaseStatus.CLOSED,
+    },
+    CaseStatus.CLOSED: {
+        CaseStatus.UNDER_REVIEW,  # Allowed reopening if further work needed
+    },
+}
 
 
 def get_utc_now() -> datetime:
@@ -46,4 +93,12 @@ class Case(Base):
         nullable=False,
         default=get_utc_now,
         onupdate=get_utc_now,
+    )
+
+    # Relationship to timeline events with cascade delete
+    events = relationship(
+        "CaseEvent",
+        back_populates="case",
+        cascade="all, delete-orphan",
+        order_by="CaseEvent.created_at.asc()",
     )
