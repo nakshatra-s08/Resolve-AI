@@ -11,6 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.database import Base, get_db
 from app.config import get_settings
+from app.services.policy_seed import seed_policy_library
 
 # Use an in-memory SQLite database isolated per test session with StaticPool
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -30,8 +31,11 @@ TestingSessionLocal = sessionmaker(
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
-    """Create all tables in the isolated test database."""
+    """Create all tables in the isolated test database and seed policy library."""
     Base.metadata.create_all(bind=engine_test)
+    init_session = TestingSessionLocal()
+    seed_policy_library(init_session)
+    init_session.close()
     yield
     Base.metadata.drop_all(bind=engine_test)
 

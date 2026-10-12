@@ -5,7 +5,7 @@
 
 ---
 
-## Backend — Phases 1, 2 & 3: Case Management, Timeline & Evidence Processing
+## Backend — Phases 1 to 4: Case Management, Timeline, Evidence & Policy Reasoning
 
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.
 
@@ -88,6 +88,47 @@ Open your browser to:
 | `GET` | `/api/cases/{case_id}/evidence/{evidence_id}` | Retrieve single evidence metadata with complete extracted text and suggestions |
 | `DELETE` | `/api/cases/{case_id}/evidence/{evidence_id}` | Safely remove stored disk file and database metadata; records `EVIDENCE_DELETED` |
 | `GET` | `/api/cases/{case_id}/evidence-checklist` | Heuristic checklist comparing existing vs missing document categories |
+| `GET` | `/api/policies` | List available policy sources and references without complete text |
+| `GET` | `/api/policies/{policy_id}` | Retrieve full policy source text and provenance metadata |
+| `POST` | `/api/policies/search` | Search policy library for passages matching query tokens |
+| `POST` | `/api/cases/{case_id}/analysis` | Generate structured case-aware analysis and next-step recommendations |
+| `POST` | `/api/cases/{case_id}/chat` | Ask questions about a case; returns grounded answers citing case context and policy |
+
+---
+
+## Policy Retrieval & Case Reasoning (Phase 4)
+
+ResolveAI provides a policy retrieval and case reasoning engine that grounds advice in case facts and reference standards.
+
+### 1. Curated Policy Library & Provenance Rules
+The policy library is seeded idempotently on application startup into the `policy_sources` SQLite table. Every source includes its provenance:
+- **Illustrative Standards**: Clearly labeled with `DEMO POLICY — NOT AN OFFICIAL MANUFACTURER POLICY` (e.g., replacement escalation thresholds after 2 repair attempts).
+- **Official Guidance**: Includes real verified source URLs (e.g., National Consumer Helpline `https://consumerhelpline.gov.in/`).
+- **Best Practice Evidence Guidelines**: Checklists and guidance for chain-of-custody in repeat repair disputes.
+- **Offline Reliability**: Seeding is local and does not require internet connectivity.
+
+### 2. Lexical Policy Retrieval
+- The `PolicyRetrievalService` implements lexical keyword matching with frequency weighting and title boost.
+- Breaks policy documents into discrete passages and returns passages with relevance scores.
+- Rejects empty queries and returns empty lists for irrelevant queries without fabricating citations.
+- **Limitation**: Lexical retrieval matches keywords rather than semantic embeddings; synonyms not in the policy text may receive lower scores.
+
+### 3. Demo Mode vs. Live AI Provider
+- **Default Engine**: `AI_PROVIDER=demo` (Deterministic Rule-Based Engine).
+- **Zero API Key Requirement**: Runs completely locally with no OpenAI or external API subscription needed.
+- **Case-Aware Reasoning**: Evaluates the case status, timeline history, evidence checklist, and extracted document text:
+  - If repair receipts are missing: Recommends collecting repair job sheets before escalating.
+  - If invoices are missing: Recommends verifying purchase proof for warranty terms.
+  - If both are present: Recommends preparing formal demand for replacement under repeated defect clauses.
+- **Distinction of Facts**: Separates user-reported facts, extracted document snippets, policy passages, and AI inferences.
+- **Configuring Live AI** (Optional):
+  Set the following in `.env`:
+  ```bash
+  AI_PROVIDER=openai
+  OPENAI_API_KEY=your-api-key-here
+  OPENAI_MODEL=gpt-4o
+  ```
+  If credentials are unset or invalid, the system automatically falls back to deterministic demo mode without leaking secrets or failing requests.
 
 ---
 
@@ -95,7 +136,7 @@ Open your browser to:
 
 ### Supported File Formats:
 - **PDF** (`.pdf`): Selectable text is extracted using `pypdf`. Image-only/scanned PDFs yield extraction status `NO_TEXT_FOUND`.
-- **PNG** (`.png`), **JPG / JPEG** (`.jpg`, `.jpeg`): Supported for document attachments. Returns `UNSUPPORTED` extraction status (OCR is intentionally out of scope for Phase 3).
+- **PNG** (`.png`), **JPG / JPEG** (`.jpg`, `.jpeg`): Supported for document attachments. Returns `UNSUPPORTED` extraction status (OCR is intentionally out of scope).
 - **Validation**: Strict file magic header inspection prevents client MIME spoofing (e.g. `.exe` disguised as `.pdf`).
 
 ### Maximum File Size:
@@ -107,15 +148,6 @@ Open your browser to:
 - Stored using random server-generated UUID filenames (`<hex>.<ext>`) to prevent directory traversal attacks.
 - Absolute filesystem paths are never exposed over API responses.
 - Uploaded files are excluded from Git via `.gitignore`.
-- Local storage privacy: documents are stored unencrypted on the local development disk for demo simplicity.
-
-### Evidence Classification:
-- A deterministic rule-based classifier suggests document categories (`INVOICE`, `WARRANTY`, `REPAIR_RECEIPT`, `SERVICE_COMMUNICATION`, `OTHER`) using keywords in the filename and extracted text.
-- User-supplied categories take precedence when specified in the upload form.
-
-### Evidence Checklist:
-- `GET /api/cases/{case_id}/evidence-checklist` evaluates representation across baseline categories (`INVOICE`, `WARRANTY`, `REPAIR_RECEIPT`, `SERVICE_COMMUNICATION`).
-- Returns an explicit disclaimer explaining that the checklist is a heuristic completeness aid, not a legal requirement.
 
 ---
 
@@ -138,7 +170,7 @@ ResolveAI implements a controlled state machine. Invalid transitions return `HTT
 
 - **Default Location**: `backend/data/resolveai.db` (auto-created on startup).
 - **Persistent**: Survives backend restarts.
-- **Migration Policy**: `init_db()` executes `Base.metadata.create_all(bind=engine)` on app startup. All existing tables (`cases`, `case_events`) and records are preserved, and new tables (`evidence`) are created automatically without data loss.
+- **Migration Policy**: `init_db()` executes `Base.metadata.create_all(bind=engine)` on app startup. All existing tables (`cases`, `case_events`, `evidence`) and records are preserved, and new tables (`policy_sources`) are created automatically without data loss.
 
 ---
 
@@ -150,4 +182,4 @@ Run the full pytest suite from the `backend/` directory:
 python3 -m pytest -v
 ```
 
-All 42 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and a **temporary sandbox upload directory**, guaranteeing zero modification or pollution of your real local database and uploads.
+All 55 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and a **temporary sandbox upload directory**, guaranteeing zero modification or pollution of your real local database and uploads.

@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.config import get_settings
-from app.database import init_db
+from app.database import init_db, SessionLocal
+from app.services.policy_seed import seed_policy_library
 
 settings = get_settings()
 
@@ -12,6 +13,12 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     # Ensure database schema is initialized on application startup
     init_db()
+    # Idempotently seed curated policy library into SQLite
+    db = SessionLocal()
+    try:
+        seed_policy_library(db)
+    finally:
+        db.close()
     yield
 
 
@@ -19,7 +26,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     description=(
         "ResolveAI backend API — Personal repair-resolution agent "
-        "managing consumer repair cases, evidence, and actions."
+        "managing consumer repair cases, evidence, policy retrieval, and actions."
     ),
     version="0.1.0",
     docs_url="/docs",
