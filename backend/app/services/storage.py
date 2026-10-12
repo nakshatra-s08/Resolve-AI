@@ -69,6 +69,19 @@ async def save_uploaded_file(file: UploadFile) -> Tuple[str, str, int, str, str,
             ),
         )
 
+    expected_mimes = {
+        "pdf": {"application/pdf", "application/octet-stream"},
+        "png": {"image/png", "application/octet-stream"},
+        "jpg": {"image/jpeg", "image/jpg", "application/octet-stream"},
+        "jpeg": {"image/jpeg", "image/jpg", "application/octet-stream"},
+    }
+    declared_mime = (file.content_type or "application/octet-stream").lower()
+    if declared_mime not in expected_mimes[extension]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Declared content type does not match file extension '.{extension}'.",
+        )
+
     # Read bounded content to prevent arbitrary memory usage
     max_size = settings.MAX_UPLOAD_SIZE_BYTES
     content = bytearray()
@@ -135,5 +148,55 @@ def remove_stored_file(storage_filename: str) -> bool:
             # If path traversal or weird directory resolved outside, reject
             return False
         return True  # If already absent, treat as cleanly removed
+    except Exception:
+        return False
+
+
+def stage_stored_file_for_deletion(storage_filename: str) -> str | None:
+    """Atomically move a stored file aside so a failed DB commit can restore it."""
+    try:
+        upload_dir = get_upload_dir()
+        source = (upload_dir / storage_filename).resolve()
+        if upload_dir not in source.parents:
+            return None
+        if not source.exists():
+            return ""
+        staged_name = f".deleting-{uuid.uuid4().hex}"
+        source.replace(upload_dir / staged_name)
+        return staged_name
+    except Exception:
+        return None
+
+
+def restore_staged_file(storage_filename: str, staged_filename: str) -> bool:
+    """Restore a staged file after a failed database transaction."""
+    if not staged_filename:
+        return True
+    try:
+        upload_dir = get_upload_dir()
+        staged = (upload_dir / staged_filename).resolve()
+        target = (upload_dir / storage_filename).resolve()
+        if upload_dir not in staged.parents or upload_dir not in target.parents:
+            return False
+        if not staged.exists():
+            return False
+        staged.replace(target)
+        return True
+    except Exception:
+        return False
+
+
+def discard_staged_file(staged_filename: str) -> bool:
+    """Remove a staged file after the database deletion has committed."""
+    if not staged_filename:
+        return True
+    try:
+        upload_dir = get_upload_dir()
+        staged = (upload_dir / staged_filename).resolve()
+        if upload_dir not in staged.parents:
+            return False
+        if staged.exists():
+            staged.unlink()
+        return True
     except Exception:
         return False

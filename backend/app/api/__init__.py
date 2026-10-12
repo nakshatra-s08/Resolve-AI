@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.routes import health, cases, evidence, policies, analysis
+from app.api.routes import health, cases, evidence, policies, analysis, actions
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
@@ -7,3 +7,4 @@ api_router.include_router(cases.router)
 api_router.include_router(evidence.router)
 api_router.include_router(policies.router)
 api_router.include_router(analysis.router)
+api_router.include_router(actions.router)

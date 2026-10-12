@@ -86,7 +86,9 @@ class CaseContextService:
             "updated_at": case.updated_at.isoformat(),
             "timeline": timeline_summary,
             "evidence": evidence_items,
-            "represented_categories": [c.value for c in represented_categories],
+            "represented_categories": [
+                category.value for category in BASELINE_CHECKLIST if category in represented_categories
+            ],
             "missing_categories": missing_categories,
             "suggested_query": search_query,
         }

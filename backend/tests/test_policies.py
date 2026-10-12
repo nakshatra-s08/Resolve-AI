@@ -36,6 +36,16 @@ def test_get_policy_detail(client: TestClient):
     assert "Section 1: Repair Attempt Limitations" in data["document_text"]
 
 
+def test_consumer_helpline_seed_is_only_a_reference_pointer(client: TestClient):
+    response = client.get("/api/policies/policy_official_consumer_guidance_in_03")
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["source_type"] == "GUIDANCE"
+    assert "REFERENCE POINTER" in data["title"]
+    assert "does not contain a verified excerpt" in data["document_text"]
+    assert "entitled to seek redressal" not in data["document_text"]
+
+
 def test_get_policy_unknown_id_returns_404(client: TestClient):
     """GET /api/policies/{policy_id} returns 404 for unknown ID."""
     response = client.get("/api/policies/unknown_policy_id_999")

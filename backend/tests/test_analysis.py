@@ -27,6 +27,10 @@ def test_case_analysis_demo_mode_without_evidence(client: TestClient):
     assert "Dell XPS 15" in data["summary"]
     assert len(data["known_facts"]) >= 1
     assert any(f["category"] == "USER_REPORTED" for f in data["known_facts"])
+    assert any(
+        policy["passage"][:100] in data["reasoning"]
+        for policy in data["supporting_policy_sources"]
+    )
 
     # Without receipts, recommendation must flag missing repair receipt/job sheet
     assert len(data["missing_information"]) > 0

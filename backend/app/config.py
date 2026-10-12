@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
 
     # AI Reasoning Provider Configuration
-    # Options: "demo" (default, deterministic), "openai", "gemini"
+    # Only demo runs; credentialed live providers currently return HTTP 503.
     AI_PROVIDER: str = "demo"
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o"

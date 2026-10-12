@@ -15,6 +15,15 @@ from app.schemas.analysis import (
     CaseChatRequest,
     CaseChatResponse,
 )
+from app.schemas.action import (
+    SendMessagePayload,
+    ScheduleFollowUpPayload,
+    ActionCreate,
+    ActionUpdate,
+    ActionRead,
+    ActionExecutionResponse,
+    FollowUpItem,
+)
 
 __all__ = [
     "CaseCreate",
@@ -36,4 +45,11 @@ __all__ = [
     "CaseAnalysisResponse",
     "CaseChatRequest",
     "CaseChatResponse",
+    "SendMessagePayload",
+    "ScheduleFollowUpPayload",
+    "ActionCreate",
+    "ActionUpdate",
+    "ActionRead",
+    "ActionExecutionResponse",
+    "FollowUpItem",
 ]

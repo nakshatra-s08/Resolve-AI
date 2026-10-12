@@ -107,14 +107,14 @@ class PolicyRetrievalService:
         # Sort descending by score
         scored_passages.sort(key=lambda x: x["score"], reverse=True)
 
-        # De-duplicate identical passages and cap at limit
+        # De-duplicate identical stored passages; equal prefixes can be distinct evidence.
         seen_passages = set()
         results = []
         for sp in scored_passages:
-            p_snippet = sp["passage"][:100]
-            if p_snippet in seen_passages:
+            passage_key = (sp["source_id"], sp["passage"])
+            if passage_key in seen_passages:
                 continue
-            seen_passages.add(p_snippet)
+            seen_passages.add(passage_key)
 
             results.append(
                 PolicySearchResultItem(

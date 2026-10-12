@@ -68,7 +68,8 @@ def test_upload_pdf_with_text_extraction(client: TestClient):
     assert data["case_id"] == case_id
     assert data["original_filename"] == "laptop_repair_invoice.pdf"
     assert data["mime_type"] == "application/pdf"
-    assert data["evidence_type"] == "INVOICE"
+    assert data["evidence_type"] == "OTHER"
+    assert data["suggested_evidence_type"] == "INVOICE"
     assert data["extraction_status"] == "COMPLETED"
     assert "Laptop Repair Invoice 12345" in data["extracted_text"]
 
@@ -140,6 +141,19 @@ def test_upload_rejects_mismatched_content_header(client: TestClient):
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "do not match declared extension" in response.json()["detail"]
+
+
+def test_upload_rejects_mismatched_declared_mime(client: TestClient):
+    created = client.post(
+        "/api/cases",
+        json={"title": "Case", "product_name": "Device", "issue_description": "Defect"},
+    )
+    response = client.post(
+        f"/api/cases/{created.json()['id']}/evidence",
+        files={"file": ("invoice.pdf", create_minimal_pdf("Invoice"), "text/html")},
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "content type" in response.json()["detail"]
 
 
 def test_upload_rejects_unknown_case_id(client: TestClient):

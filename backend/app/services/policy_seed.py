@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.policy import PolicySource, PolicySourceType
 
@@ -42,20 +41,16 @@ SEED_POLICIES = [
     },
     {
         "id": "policy_official_consumer_guidance_in_03",
-        "title": "OFFICIAL GUIDANCE: National Consumer Helpline Consumer Rights Advisory on Defective Goods",
+        "title": "REFERENCE POINTER: National Consumer Helpline",
         "source_url": "https://consumerhelpline.gov.in/",
-        "source_type": PolicySourceType.OFFICIAL,
+        "source_type": PolicySourceType.GUIDANCE,
         "jurisdiction": "IN",
         "product_category": "electronics",
         "document_text": (
-            "OFFICIAL GUIDANCE — Source: National Consumer Helpline (https://consumerhelpline.gov.in/)\n\n"
-            "Consumer Protection Guidelines for Repeated Defect After Repair:\n"
-            "1. Under the Consumer Protection Act, 2019, consumers who experience persistent manufacturing defects or "
-            "substandard after-sales service are entitled to seek redressal for deficiency in service.\n"
-            "2. When a newly purchased consumer electronic product develops recurrent faults despite repair attempts during the warranty period, "
-            "the consumer has the right to register a formal grievance through the National Consumer Helpline (NCH) portal or app.\n"
-            "3. Essential documentation required for grievance filing: Tax invoice, warranty registration/card, dated job-sheets "
-            "issued by authorized service centers detailing parts serviced or replaced, and copies of prior communications."
+            "Reference pointer only: https://consumerhelpline.gov.in/\n\n"
+            "This seed stores a link to the National Consumer Helpline. It does not contain a verified excerpt from that site. "
+            "No legal rule, eligibility test, remedy, or required-document list is asserted by this record. "
+            "Consult the linked source and applicable official materials for current guidance."
         ),
     },
     {
@@ -85,7 +80,7 @@ def seed_policy_library(db: Session) -> int:
     Returns the count of newly inserted policy records.
     """
     inserted_count = 0
-    now = datetime.now(timezone.utc)
+    changed = False
 
     for p in SEED_POLICIES:
         existing = db.query(PolicySource).filter(PolicySource.id == p["id"]).first()
@@ -98,12 +93,24 @@ def seed_policy_library(db: Session) -> int:
                 jurisdiction=p["jurisdiction"],
                 product_category=p["product_category"],
                 document_text=p["document_text"],
-                retrieved_at=now,
+                retrieved_at=None,
             )
             db.add(new_policy)
             inserted_count += 1
+            changed = True
+        else:
+            # Keep bundled records' provenance accurate across upgrades while leaving
+            # user-created policy records untouched.
+            for field in (
+                "title", "source_url", "source_type", "jurisdiction",
+                "product_category", "document_text", "retrieved_at",
+            ):
+                value = None if field == "retrieved_at" else p[field]
+                if getattr(existing, field) != value:
+                    setattr(existing, field, value)
+                    changed = True
 
-    if inserted_count > 0:
+    if changed:
         db.commit()
 
     return inserted_count

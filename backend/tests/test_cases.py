@@ -213,6 +213,18 @@ def test_update_case_rejects_empty_whitespace_strings(client: TestClient):
     assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
+def test_update_case_rejects_null_and_empty_patch(client: TestClient):
+    created = client.post(
+        "/api/cases",
+        json={"title": "Title", "product_name": "Product", "issue_description": "Description"},
+    )
+    case_id = created.json()["id"]
+    for payload in ({}, {"title": None}):
+        response = client.patch(f"/api/cases/{case_id}", json=payload)
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert client.get(f"/api/cases/{case_id}").json()["title"] == "Title"
+
+
 def test_update_case_rejects_extra_fields(client: TestClient):
     """PATCH /api/cases/{case_id} rejects arbitrary database fields like status or id."""
     create_resp = client.post(

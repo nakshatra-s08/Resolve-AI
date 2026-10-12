@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models.policy import PolicySourceType
 
 
@@ -32,6 +32,14 @@ class PolicySearchRequest(BaseModel):
     product_category: Optional[str] = Field(None, max_length=64, description="Optional product filter")
     jurisdiction: Optional[str] = Field(None, max_length=64, description="Optional jurisdiction filter")
     limit: int = Field(5, ge=1, le=20, description="Maximum number of passages to return")
+
+    @field_validator("query")
+    @classmethod
+    def validate_non_whitespace_query(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("query cannot be empty or whitespace only")
+        return value
 
 
 class PolicySearchResultItem(BaseModel):

@@ -109,3 +109,11 @@ class Case(Base):
         cascade="all, delete-orphan",
         order_by="Evidence.created_at.desc()",
     )
+
+    # Relationship to action records with cascade delete
+    actions = relationship(
+        "Action",
+        back_populates="case",
+        cascade="all, delete-orphan",
+        order_by="Action.created_at.desc()",
+    )

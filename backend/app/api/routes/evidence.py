@@ -6,7 +6,13 @@ from app.models.case import Case
 from app.models.event import CaseEvent, EventType, EventSource
 from app.models.evidence import Evidence, EvidenceType, ExtractionStatus
 from app.schemas.evidence import EvidenceRead, EvidenceDetail, EvidenceChecklistResponse
-from app.services.storage import save_uploaded_file, remove_stored_file
+from app.services.storage import (
+    save_uploaded_file,
+    remove_stored_file,
+    stage_stored_file_for_deletion,
+    restore_staged_file,
+    discard_staged_file,
+)
 from app.services.extractor import extract_text_from_file, classify_document
 
 router = APIRouter(prefix="/cases/{case_id}", tags=["Evidence"])
@@ -48,7 +54,9 @@ async def upload_evidence(
 
     # Suggest category heuristic
     suggested_type = classify_document(orig_name, extracted_text)
-    assigned_type = evidence_type if evidence_type is not None else suggested_type
+    # Classification is advisory only. Without an explicit user-selected category,
+    # do not let a filename or text heuristic count as a represented checklist item.
+    assigned_type = evidence_type if evidence_type is not None else EvidenceType.OTHER
 
     # Persist in database
     db_evidence = Evidence(
@@ -122,7 +130,7 @@ def list_case_evidence(case_id: str, db: Session = Depends(get_db)) -> List[Evid
     return (
         db.query(Evidence)
         .filter(Evidence.case_id == case_id)
-        .order_by(Evidence.created_at.desc())
+        .order_by(Evidence.created_at.desc(), Evidence.id.desc())
         .all()
     )
 
@@ -192,13 +200,14 @@ def delete_case_evidence(
             detail=f"Evidence with ID '{evidence_id}' was not found for this case.",
         )
 
-    # First attempt removing file on disk
+    # Stage the file with an atomic rename. If the database commit fails, restore it.
     storage_name = db_evidence.storage_filename
     orig_name = db_evidence.original_filename
-    if not remove_stored_file(storage_name):
+    staged_name = stage_stored_file_for_deletion(storage_name)
+    if staged_name is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to remove stored file from filesystem.",
+            detail="Failed to stage stored file for deletion.",
         )
 
     # Delete record from database and record timeline event
@@ -214,7 +223,24 @@ def delete_case_evidence(
     )
     db.add(event)
     db.delete(db_evidence)
-    db.commit()
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        restored = restore_staged_file(storage_name, staged_name)
+        message = "Failed to remove evidence from database."
+        if not restored:
+            message += " File restoration also failed; recover the staged file manually."
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=message,
+        ) from exc
+
+    if not discard_staged_file(staged_name):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Evidence metadata was removed, but the staged file could not be cleaned up.",
+        )
 
     return {"status": "success", "message": f"Evidence '{orig_name}' removed successfully."}
 

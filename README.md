@@ -5,7 +5,7 @@
 
 ---
 
-## Backend — Phases 1 to 4: Case Management, Timeline, Evidence & Policy Reasoning
+## Backend — Phases 1 to 5: Case Management, Timeline, Evidence, Reasoning & Actions
 
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.
 
@@ -15,8 +15,8 @@ This repository contains the backend for ResolveAI, built with **Python**, **Fas
 - **Uvicorn**: 0.30+
 - **SQLAlchemy**: 2.0+
 - **Pydantic**: 2.7+
-- **pypdf**: 6.20+ (selectable text extraction from PDFs)
-- **python-multipart**: 0.0.32+ (multipart/form-data support)
+- **pypdf**: 5.0+ (selectable text extraction from PDFs)
+- **python-multipart**: 0.0.9+ (multipart/form-data support)
 - **SQLite**: Local persistent storage (default: `backend/data/resolveai.db`)
 - **Pytest**: 8.0+
 
@@ -93,6 +93,44 @@ Open your browser to:
 | `POST` | `/api/policies/search` | Search policy library for passages matching query tokens |
 | `POST` | `/api/cases/{case_id}/analysis` | Generate structured case-aware analysis and next-step recommendations |
 | `POST` | `/api/cases/{case_id}/chat` | Ask questions about a case; returns grounded answers citing case context and policy |
+| `POST` | `/api/cases/{case_id}/actions` | Propose an action for a case (initial status: `PENDING_APPROVAL`, requires user approval) |
+| `GET` | `/api/cases/{case_id}/actions` | List all proposed, approved, and executed actions for a case |
+| `GET` | `/api/cases/{case_id}/follow-ups` | List scheduled follow-ups for a case with real-time `is_overdue` status |
+| `GET` | `/api/actions/{action_id}` | Retrieve single action record |
+| `PATCH` | `/api/actions/{action_id}` | Edit an action in `DRAFT` or `PENDING_APPROVAL` (invalidates prior approval) |
+| `POST` | `/api/actions/{action_id}/approve` | Explicitly approve an action (transitions from `PENDING_APPROVAL` to `APPROVED`) |
+| `POST` | `/api/actions/{action_id}/reject` | Explicitly reject an action (transitions to `REJECTED`, permanently blocks execution) |
+| `POST` | `/api/actions/{action_id}/execute` | Execute an approved action in a safe simulated environment (idempotent) |
+
+---
+
+## Agent Actions & Approval Workflow (Phase 5)
+
+ResolveAI enforces human-in-the-loop control for any consequential action. The AI or system may only propose actions; execution is strictly blocked until explicit user approval is recorded.
+
+### 1. Action Lifecycle State Machine
+```
+[DRAFT] / [PENDING_APPROVAL] ──(Approve)──► [APPROVED] ──(Execute)──► [EXECUTED]
+       │             ▲                          │
+       │             └──(Edit invalidates)──────┘
+       ▼
+   [REJECTED] (permanently blocked)
+```
+
+- **Supported Action Types**:
+  - `SEND_MESSAGE`: Generates a proposed communication (e.g. escalation notice). Must include `recipient`, `message_body`, and `is_simulated: true`.
+  - `SCHEDULE_FOLLOW_UP`: Establishes a reminder. Must include `due_at` (UTC timestamp) and `purpose`.
+- **Supported Statuses**: `DRAFT`, `PENDING_APPROVAL`, `APPROVED`, `REJECTED`, `EXECUTED`, `FAILED`, `CANCELLED`.
+- **Approval Invalidation**: If an action is edited via `PATCH /api/actions/{action_id}`, any existing approval is automatically revoked and the status returns to `PENDING_APPROVAL`.
+- **Execution Guardrails**:
+  - Unapproved or rejected actions return `HTTP 409 Conflict` upon execution attempts.
+  - The AI model is strictly prohibited from approving actions on the user's behalf.
+  - Idempotent execution: Calling execute on an already executed action returns the existing record without duplicating effects.
+
+### 2. Simulated Environment Execution
+- **`SEND_MESSAGE`**: Simulated delivery dispatches to an internal simulation log. No real external emails, SMS, or manufacturer APIs are invoked.
+- **`SCHEDULE_FOLLOW_UP`**: Records the due timestamp in persistent SQLite storage. No external calendar or third-party webhooks are fired.
+- **Real-Time Overdue Calculation**: `GET /api/cases/{case_id}/follow-ups` dynamically evaluates current UTC time against `due_at` to mark `is_overdue: true` if the deadline has elapsed.
 
 ---
 
@@ -103,7 +141,7 @@ ResolveAI provides a policy retrieval and case reasoning engine that grounds adv
 ### 1. Curated Policy Library & Provenance Rules
 The policy library is seeded idempotently on application startup into the `policy_sources` SQLite table. Every source includes its provenance:
 - **Illustrative Standards**: Clearly labeled with `DEMO POLICY — NOT AN OFFICIAL MANUFACTURER POLICY` (e.g., replacement escalation thresholds after 2 repair attempts).
-- **Official Guidance**: Includes real verified source URLs (e.g., National Consumer Helpline `https://consumerhelpline.gov.in/`).
+- **Reference pointer**: The National Consumer Helpline entry stores a link only. It is classified as general guidance and contains no verified quote or legal rule.
 - **Best Practice Evidence Guidelines**: Checklists and guidance for chain-of-custody in repeat repair disputes.
 - **Offline Reliability**: Seeding is local and does not require internet connectivity.
 
@@ -111,24 +149,11 @@ The policy library is seeded idempotently on application startup into the `polic
 - The `PolicyRetrievalService` implements lexical keyword matching with frequency weighting and title boost.
 - Breaks policy documents into discrete passages and returns passages with relevance scores.
 - Rejects empty queries and returns empty lists for irrelevant queries without fabricating citations.
-- **Limitation**: Lexical retrieval matches keywords rather than semantic embeddings; synonyms not in the policy text may receive lower scores.
 
-### 3. Demo Mode vs. Live AI Provider
+### 3. Demo Mode and Provider Availability
 - **Default Engine**: `AI_PROVIDER=demo` (Deterministic Rule-Based Engine).
-- **Zero API Key Requirement**: Runs completely locally with no OpenAI or external API subscription needed.
-- **Case-Aware Reasoning**: Evaluates the case status, timeline history, evidence checklist, and extracted document text:
-  - If repair receipts are missing: Recommends collecting repair job sheets before escalating.
-  - If invoices are missing: Recommends verifying purchase proof for warranty terms.
-  - If both are present: Recommends preparing formal demand for replacement under repeated defect clauses.
+- **Zero API Key Requirement**: Runs completely locally with no external API subscription needed.
 - **Distinction of Facts**: Separates user-reported facts, extracted document snippets, policy passages, and AI inferences.
-- **Configuring Live AI** (Optional):
-  Set the following in `.env`:
-  ```bash
-  AI_PROVIDER=openai
-  OPENAI_API_KEY=your-api-key-here
-  OPENAI_MODEL=gpt-4o
-  ```
-  If credentials are unset or invalid, the system automatically falls back to deterministic demo mode without leaking secrets or failing requests.
 
 ---
 
@@ -166,11 +191,11 @@ ResolveAI implements a controlled state machine. Invalid transitions return `HTT
 
 ---
 
-## Database Storage & Migration Safety
+## Database Storage & Schema Changes
 
 - **Default Location**: `backend/data/resolveai.db` (auto-created on startup).
 - **Persistent**: Survives backend restarts.
-- **Migration Policy**: `init_db()` executes `Base.metadata.create_all(bind=engine)` on app startup. All existing tables (`cases`, `case_events`, `evidence`) and records are preserved, and new tables (`policy_sources`) are created automatically without data loss.
+- **Schema setup**: `init_db()` uses SQLAlchemy `create_all()` to create missing tables. This safely creates the `actions` table and preserves all existing `cases`, `case_events`, `evidence`, and `policy_sources` data without alteration.
 
 ---
 
@@ -182,4 +207,4 @@ Run the full pytest suite from the `backend/` directory:
 python3 -m pytest -v
 ```
 
-All 55 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and a **temporary sandbox upload directory**, guaranteeing zero modification or pollution of your real local database and uploads.
+All 67 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and temporary upload directories.

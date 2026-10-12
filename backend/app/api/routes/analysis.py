@@ -36,7 +36,6 @@ def analyze_case(
     retrieval_service = PolicyRetrievalService(db)
     policies = retrieval_service.search(
         query=context["suggested_query"],
-        product_category="laptop",
         limit=3,
     )
 
@@ -91,7 +90,6 @@ def chat_with_case(
     retrieval_service = PolicyRetrievalService(db)
     policies = retrieval_service.search(
         query=message,
-        product_category="laptop",
         limit=2,
     )
 

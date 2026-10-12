@@ -41,7 +41,7 @@ def create_case(case_in: CaseCreate, db: Session = Depends(get_db)) -> Case:
 @router.get("", response_model=List[CaseRead])
 def list_cases(db: Session = Depends(get_db)) -> List[Case]:
     """List all repair cases ordered by creation timestamp descending."""
-    return db.query(Case).order_by(Case.created_at.desc()).all()
+    return db.query(Case).order_by(Case.created_at.desc(), Case.id.desc()).all()
 
 
 @router.get("/{case_id}", response_model=CaseRead)

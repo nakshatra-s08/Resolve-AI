@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.models.case import CaseStatus
 from app.models.event import EventType, EventSource
 
@@ -73,6 +73,14 @@ class CaseUpdate(BaseModel):
                 raise ValueError(f"{info.field_name} cannot be empty or whitespace only")
             return stripped
         return value
+
+    @model_validator(mode="after")
+    def validate_patch_fields(self):
+        if not self.model_fields_set:
+            raise ValueError("At least one case field must be provided")
+        if any(getattr(self, name) is None for name in self.model_fields_set):
+            raise ValueError("Case fields cannot be null")
+        return self
 
     model_config = ConfigDict(
         extra="forbid",

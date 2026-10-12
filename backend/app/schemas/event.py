@@ -14,6 +14,7 @@ class CaseEventCreate(BaseModel):
         ...,
         description="Human-readable description or note content.",
         min_length=1,
+        max_length=5000,
     )
 
     @field_validator("description")

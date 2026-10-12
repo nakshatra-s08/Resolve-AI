@@ -92,11 +92,32 @@ class DemoAIProvider(BaseAIProvider):
                 )
             )
 
-        # Formulate recommendation and reasoning based on available vs missing evidence
+        # Match recommendation branches to terms in the actual retrieved passages.
+        # A citation alone does not make a generic recommendation policy-grounded.
+        relevant_terms = (
+            ("job sheet", "repair receipt", "service documentation")
+            if "REPAIR_RECEIPT" in missing
+            else ("invoice", "proof of purchase", "purchase documentation")
+            if "INVOICE" in missing
+            else ("replacement", "refund", "escalation")
+        )
+        policy_basis = next(
+            (
+                source for source in retrieved_policies
+                if any(term in source.passage.lower() for term in relevant_terms)
+            ),
+            None,
+        )
         if "REPAIR_RECEIPT" in missing:
-            recommended_step = (
-                f"Collect and upload repair job sheets documenting the prior service visits for your {product_name}."
-            )
+            if policy_basis:
+                recommended_step = (
+                    f"Collect the prior repair job sheets called for in the retrieved {policy_basis.source_type.value.lower()} "
+                    f"passage '{policy_basis.source_title}', and check that they describe each service visit."
+                )
+            else:
+                recommended_step = (
+                    f"Collect and upload repair job sheets documenting the prior service visits for your {product_name}."
+                )
             reasoning = (
                 f"The case reports a recurring defect in {product_name}. However, without service center documentation "
                 "verifying the dates and parts replaced during prior repair attempts, manufacturer escalations cannot "
@@ -104,23 +125,44 @@ class DemoAIProvider(BaseAIProvider):
             )
             suggested_action = "Upload prior service center receipts or job sheets."
         elif "INVOICE" in missing:
-            recommended_step = (
-                "Provide your original purchase invoice to verify active warranty eligibility."
-            )
+            if policy_basis:
+                recommended_step = (
+                    f"Locate the purchase invoice referenced by the retrieved {policy_basis.source_type.value.lower()} "
+                    f"passage '{policy_basis.source_title}'; use it to verify the purchase date against the warranty terms."
+                )
+            else:
+                recommended_step = "Locate the purchase invoice and compare its date with the applicable warranty terms."
             reasoning = (
-                "Service receipts confirm previous repair cycles, but proof of purchase is required to substantiate "
-                "that the unit remains within the manufacturer's active limited warranty or consumer protection period."
+                "Repair documentation is attached, but the original purchase invoice is not. The purchase date and "
+                "applicable warranty terms therefore remain unverified."
             )
             suggested_action = "Upload original invoice or proof of purchase."
         else:
-            recommended_step = (
-                f"Prepare a formal escalation request for replacement or full refund under repeat defect guidelines."
-            )
+            if policy_basis:
+                recommended_step = (
+                    f"The retrieved {policy_basis.source_type.value.lower()} passage '{policy_basis.source_title}' "
+                    "describes a remedy or escalation path. Compare its stated conditions with the verified records "
+                    "and warranty terms before contacting the provider."
+                )
+            else:
+                recommended_step = (
+                    "Review the attached purchase and service records against the applicable warranty terms, then decide "
+                    "whether to request escalation from the provider."
+                )
             reasoning = (
-                f"Key supporting documents (invoice and repair history) are accounted for. The recurring defect in "
-                f"{product_name} justifies an escalation under applicable policy standards rather than a third repair."
+                "Invoice and repair receipt categories are represented in the case. Their presence does not verify "
+                "authenticity, warranty coverage, or eligibility for a particular remedy."
             )
-            suggested_action = "Draft formal escalation notice to manufacturer support."
+            suggested_action = "Check the warranty terms and confirm the repair history before contacting support."
+
+        if policy_basis:
+            provenance = policy_basis.source_type.value.lower()
+            reasoning += (
+                f" Retrieved {provenance} passage from '{policy_basis.source_title}': "
+                f"{policy_basis.passage[:500]}"
+            )
+        else:
+            reasoning += " No matching policy passage was found; this recommendation is based on case organization only."
 
         uncertainty_notes = [
             "This recommendation was generated by ResolveAI in DEMO MODE using deterministic rules.",
@@ -177,10 +219,14 @@ class DemoAIProvider(BaseAIProvider):
                 f"have been logged so far."
             )
         elif any(w in q_lower for w in ["refund", "replacement", "replace", "policy"]):
-            answer = (
-                f"Regarding remedies for {product_name}: Under applicable guidelines, devices that fail repeatedly "
-                f"after two repair attempts may qualify for replacement or credit escalation rather than a third repair.{policy_summary}"
-            )
+            if retrieved_policies:
+                source = retrieved_policies[0]
+                answer = (
+                    f"The retrieved {source.source_type.value.lower()} passage from '{source.source_title}' says: "
+                    f"{source.passage[:500]}"
+                )
+            else:
+                answer = "I found no matching policy passage, so I cannot ground a remedy answer in the stored library."
         else:
             answer = (
                 f"Regarding your query on {product_name} ('{issue}'): We are tracking your case under status '{status}'. "
