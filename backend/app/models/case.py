@@ -19,7 +19,6 @@ class CaseStatus(str, enum.Enum):
 
 
 # Documented valid status transitions dictionary
-# Each status maps to the set of allowed destination statuses.
 VALID_STATUS_TRANSITIONS = {
     CaseStatus.NEW: {
         CaseStatus.COLLECTING_EVIDENCE,
@@ -55,11 +54,11 @@ VALID_STATUS_TRANSITIONS = {
         CaseStatus.CLOSED,
     },
     CaseStatus.RESOLVED: {
-        CaseStatus.UNDER_REVIEW,  # Allowed reopening when issue recurs
+        CaseStatus.UNDER_REVIEW,
         CaseStatus.CLOSED,
     },
     CaseStatus.CLOSED: {
-        CaseStatus.UNDER_REVIEW,  # Allowed reopening if further work needed
+        CaseStatus.UNDER_REVIEW,
     },
 }
 
@@ -101,4 +100,12 @@ class Case(Base):
         back_populates="case",
         cascade="all, delete-orphan",
         order_by="CaseEvent.created_at.asc()",
+    )
+
+    # Relationship to evidence records with cascade delete
+    evidence = relationship(
+        "Evidence",
+        back_populates="case",
+        cascade="all, delete-orphan",
+        order_by="Evidence.created_at.desc()",
     )

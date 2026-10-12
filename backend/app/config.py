@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     # Database URL: default stores SQLite file inside backend/data/resolveai.db
     DATABASE_URL: str = "sqlite:///./data/resolveai.db"
 
+    # Uploads configuration
+    UPLOAD_DIR: str = "./uploads"
+    MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
+
     # CORS origins allowed in local development
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

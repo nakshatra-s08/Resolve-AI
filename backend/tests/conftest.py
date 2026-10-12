@@ -1,5 +1,8 @@
-import pytest
+import shutil
+import tempfile
+from pathlib import Path
 from typing import Generator
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -7,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.database import Base, get_db
+from app.config import get_settings
 
 # Use an in-memory SQLite database isolated per test session with StaticPool
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -30,6 +34,16 @@ def setup_test_db():
     Base.metadata.create_all(bind=engine_test)
     yield
     Base.metadata.drop_all(bind=engine_test)
+
+
+@pytest.fixture(autouse=True)
+def isolated_upload_dir(monkeypatch):
+    """Ensure all file uploads during testing happen in an isolated temporary directory."""
+    temp_dir = tempfile.mkdtemp()
+    settings = get_settings()
+    monkeypatch.setattr(settings, "UPLOAD_DIR", temp_dir)
+    yield temp_dir
+    shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @pytest.fixture()

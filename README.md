@@ -5,7 +5,7 @@
 
 ---
 
-## Backend — Phases 1 & 2: Case Management & Persistent Timeline
+## Backend — Phases 1, 2 & 3: Case Management, Timeline & Evidence Processing
 
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.
 
@@ -15,6 +15,8 @@ This repository contains the backend for ResolveAI, built with **Python**, **Fas
 - **Uvicorn**: 0.30+
 - **SQLAlchemy**: 2.0+
 - **Pydantic**: 2.7+
+- **pypdf**: 6.20+ (selectable text extraction from PDFs)
+- **python-multipart**: 0.0.32+ (multipart/form-data support)
 - **SQLite**: Local persistent storage (default: `backend/data/resolveai.db`)
 - **Pytest**: 8.0+
 
@@ -74,13 +76,46 @@ Open your browser to:
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Confirm backend operational status (`{"status": "ok"}`) |
-| `POST` | `/api/cases` | Create a new repair case (initial status: `NEW`, automatically logs `CASE_CREATED`) |
+| `POST` | `/api/cases` | Create a new repair case (initial status: `NEW`, logs `CASE_CREATED`) |
 | `GET` | `/api/cases` | List all existing repair cases (ordered newest first) |
 | `GET` | `/api/cases/{case_id}` | Retrieve a specific case by its UUID (returns 404 if not found) |
 | `PATCH` | `/api/cases/{case_id}` | Partially update case details (`title`, `product_name`, `issue_description`) |
 | `PATCH` | `/api/cases/{case_id}/status` | Transition case workflow status (returns 409 on disallowed transitions) |
 | `POST` | `/api/cases/{case_id}/events` | Add a manual user note (`event_type: NOTE_ADDED`) to the timeline |
-| `GET` | `/api/cases/{case_id}/timeline` | Retrieve chronological timeline events (supports `skip` & `limit` query parameters) |
+| `GET` | `/api/cases/{case_id}/timeline` | Retrieve chronological timeline events (`skip` & `limit` query parameters supported) |
+| `POST` | `/api/cases/{case_id}/evidence` | Upload evidence document/image via `multipart/form-data`, extracts text, logs timeline event |
+| `GET` | `/api/cases/{case_id}/evidence` | List all evidence metadata attached to a case (omits heavy text bodies) |
+| `GET` | `/api/cases/{case_id}/evidence/{evidence_id}` | Retrieve single evidence metadata with complete extracted text and suggestions |
+| `DELETE` | `/api/cases/{case_id}/evidence/{evidence_id}` | Safely remove stored disk file and database metadata; records `EVIDENCE_DELETED` |
+| `GET` | `/api/cases/{case_id}/evidence-checklist` | Heuristic checklist comparing existing vs missing document categories |
+
+---
+
+## Evidence Management & Document Processing
+
+### Supported File Formats:
+- **PDF** (`.pdf`): Selectable text is extracted using `pypdf`. Image-only/scanned PDFs yield extraction status `NO_TEXT_FOUND`.
+- **PNG** (`.png`), **JPG / JPEG** (`.jpg`, `.jpeg`): Supported for document attachments. Returns `UNSUPPORTED` extraction status (OCR is intentionally out of scope for Phase 3).
+- **Validation**: Strict file magic header inspection prevents client MIME spoofing (e.g. `.exe` disguised as `.pdf`).
+
+### Maximum File Size:
+- Default: **10 MB** (10,485,760 bytes). Configurable via `MAX_UPLOAD_SIZE_BYTES` in `.env`.
+- Uploads are streamed in bounded chunks to prevent high memory consumption.
+
+### Local File Storage & Security:
+- Files are saved to `./uploads/` (or configured `UPLOAD_DIR`).
+- Stored using random server-generated UUID filenames (`<hex>.<ext>`) to prevent directory traversal attacks.
+- Absolute filesystem paths are never exposed over API responses.
+- Uploaded files are excluded from Git via `.gitignore`.
+- Local storage privacy: documents are stored unencrypted on the local development disk for demo simplicity.
+
+### Evidence Classification:
+- A deterministic rule-based classifier suggests document categories (`INVOICE`, `WARRANTY`, `REPAIR_RECEIPT`, `SERVICE_COMMUNICATION`, `OTHER`) using keywords in the filename and extracted text.
+- User-supplied categories take precedence when specified in the upload form.
+
+### Evidence Checklist:
+- `GET /api/cases/{case_id}/evidence-checklist` evaluates representation across baseline categories (`INVOICE`, `WARRANTY`, `REPAIR_RECEIPT`, `SERVICE_COMMUNICATION`).
+- Returns an explicit disclaimer explaining that the checklist is a heuristic completeness aid, not a legal requirement.
 
 ---
 
@@ -88,16 +123,6 @@ Open your browser to:
 
 ResolveAI implements a controlled state machine. Invalid transitions return `HTTP 409 Conflict`.
 
-```
-NEW ───────────────► COLLECTING_EVIDENCE ───► UNDER_REVIEW ───► ACTION_READY ───► AWAITING_RESPONSE ───► RESOLVED
- │                          ▲                     │   ▲               ▲                     │              ▲
- │                          │                     │   │               │                     │              │
- └──────────────────────────┴─────────────────────┘   └───────────────┴─────────────────────┼──────────────┤
-                                                      (additional evidence needed)          ▼              │
-                                                                                      FOLLOW_UP_DUE ───────┘
-```
-
-### Transition Rules:
 - **`NEW`** ➔ `COLLECTING_EVIDENCE`, `UNDER_REVIEW`, `CLOSED`
 - **`COLLECTING_EVIDENCE`** ➔ `UNDER_REVIEW`, `ACTION_READY`, `CLOSED`
 - **`UNDER_REVIEW`** ➔ `COLLECTING_EVIDENCE`, `ACTION_READY`, `RESOLVED`, `CLOSED`
@@ -109,23 +134,11 @@ NEW ───────────────► COLLECTING_EVIDENCE ──�
 
 ---
 
-## Timeline & Events Model
-
-Events are stored in the `case_events` table and maintain an immutable chronological history:
-
-- **`CASE_CREATED`**: Automatically emitted when a case is created.
-- **`CASE_UPDATED`**: Emitted when case details (`title`, `product_name`, `issue_description`) are modified. Contains `changed_fields`, `old_values`, and `new_values` in `metadata_json`.
-- **`STATUS_CHANGED`**: Emitted on status changes. Contains `previous_status` and `new_status`. Identical status updates are no-ops.
-- **`NOTE_ADDED`**: Added explicitly by users via `POST /api/cases/{case_id}/events`.
-- **`SYSTEM_EVENT`**: Reserved for automated system actions.
-
----
-
 ## Database Storage & Migration Safety
 
 - **Default Location**: `backend/data/resolveai.db` (auto-created on startup).
 - **Persistent**: Survives backend restarts.
-- **Migration Policy**: `init_db()` runs via the FastAPI lifespan event and uses `Base.metadata.create_all(bind=engine)`. If `cases` already exists from Phase 1, `create_all()` will safely create the new `case_events` table without dropping or mutating existing case records.
+- **Migration Policy**: `init_db()` executes `Base.metadata.create_all(bind=engine)` on app startup. All existing tables (`cases`, `case_events`) and records are preserved, and new tables (`evidence`) are created automatically without data loss.
 
 ---
 
@@ -137,4 +150,4 @@ Run the full pytest suite from the `backend/` directory:
 python3 -m pytest -v
 ```
 
-All 31 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) using clean transactional fixtures, guaranteeing zero alteration or deletion of your local development database.
+All 42 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and a **temporary sandbox upload directory**, guaranteeing zero modification or pollution of your real local database and uploads.
