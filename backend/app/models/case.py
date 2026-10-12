@@ -44,11 +44,13 @@ VALID_STATUS_TRANSITIONS = {
     CaseStatus.AWAITING_RESPONSE: {
         CaseStatus.FOLLOW_UP_DUE,
         CaseStatus.UNDER_REVIEW,
+        CaseStatus.COLLECTING_EVIDENCE,  # Phase 6: Moving to evidence collection if provider asks for docs
         CaseStatus.RESOLVED,
         CaseStatus.CLOSED,
     },
     CaseStatus.FOLLOW_UP_DUE: {
         CaseStatus.UNDER_REVIEW,
+        CaseStatus.COLLECTING_EVIDENCE,
         CaseStatus.AWAITING_RESPONSE,
         CaseStatus.RESOLVED,
         CaseStatus.CLOSED,
@@ -116,4 +118,12 @@ class Case(Base):
         back_populates="case",
         cascade="all, delete-orphan",
         order_by="Action.created_at.desc()",
+    )
+
+    # Relationship to simulated responses with cascade delete
+    simulated_responses = relationship(
+        "SimulatedResponse",
+        back_populates="case",
+        cascade="all, delete-orphan",
+        order_by="SimulatedResponse.created_at.desc()",
     )

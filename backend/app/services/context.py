@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.case import Case
 from app.models.event import CaseEvent
 from app.models.evidence import Evidence, ExtractionStatus, EvidenceType
+from app.models.response import SimulatedResponse, ResponseProcessingStatus
 
 BASELINE_CHECKLIST = [
     EvidenceType.INVOICE,
@@ -13,7 +14,7 @@ BASELINE_CHECKLIST = [
 
 
 class CaseContextService:
-    """Gathers and filters case details, timeline, and readable evidence into structured context."""
+    """Gathers and filters case details, timeline, readable evidence, and responses into structured context."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -73,6 +74,24 @@ class CaseContextService:
             cat.value for cat in BASELINE_CHECKLIST if cat not in represented_categories
         ]
 
+        # Fetch simulated provider responses
+        responses = (
+            self.db.query(SimulatedResponse)
+            .filter(SimulatedResponse.case_id == case_id)
+            .order_by(SimulatedResponse.created_at.desc())
+            .all()
+        )
+        response_summaries = [
+            {
+                "id": r.id,
+                "provider_name": r.provider_name,
+                "status": r.status.value,
+                "response_text": r.response_text[:500],
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in responses
+        ]
+
         # Synthesize search query for policy retrieval
         search_query = f"{case.product_name} {case.issue_description} repeat repair failure"
 
@@ -90,5 +109,6 @@ class CaseContextService:
                 category.value for category in BASELINE_CHECKLIST if category in represented_categories
             ],
             "missing_categories": missing_categories,
+            "responses": response_summaries,
             "suggested_query": search_query,
         }

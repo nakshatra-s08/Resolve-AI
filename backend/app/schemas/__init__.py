@@ -24,6 +24,11 @@ from app.schemas.action import (
     ActionExecutionResponse,
     FollowUpItem,
 )
+from app.schemas.response import (
+    SimulatedResponseCreate,
+    SimulatedResponseRead,
+    ResponseProcessingResult,
+)
 
 __all__ = [
     "CaseCreate",
@@ -52,4 +57,7 @@ __all__ = [
     "ActionRead",
     "ActionExecutionResponse",
     "FollowUpItem",
+    "SimulatedResponseCreate",
+    "SimulatedResponseRead",
+    "ResponseProcessingResult",
 ]

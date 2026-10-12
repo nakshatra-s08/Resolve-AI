@@ -5,7 +5,7 @@
 
 ---
 
-## Backend — Phases 1 to 5: Case Management, Timeline, Evidence, Reasoning & Actions
+## Backend — Phases 1 to 6: Core Agentic Workflow & Simulation
 
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.
 
@@ -101,6 +101,59 @@ Open your browser to:
 | `POST` | `/api/actions/{action_id}/approve` | Explicitly approve an action (transitions from `PENDING_APPROVAL` to `APPROVED`) |
 | `POST` | `/api/actions/{action_id}/reject` | Explicitly reject an action (transitions to `REJECTED`, permanently blocks execution) |
 | `POST` | `/api/actions/{action_id}/execute` | Execute an approved action in a safe simulated environment (idempotent) |
+| `POST` | `/api/cases/{case_id}/simulate-response` | Ingest a simulated service provider response and link to case/action |
+| `GET` | `/api/cases/{case_id}/responses` | List all simulated provider responses received for a case |
+| `POST` | `/api/cases/{case_id}/responses/{response_id}/process` | Analyze a provider response against case evidence and policy, producing findings |
+
+---
+
+## Simulated Provider Responses & Follow-Up Automation (Phase 6)
+
+ResolveAI provides a complete simulated loop from action dispatch to provider response analysis and case reassessment.
+
+### 1. Simulated Provider Response Flow
+```
+User Approves Action ──► Action Executed (Simulated)
+                                │
+                                ▼
+         POST /api/cases/{case_id}/simulate-response
+                                │
+                                ▼
+         POST /api/cases/{case_id}/responses/{response_id}/process
+                                │
+                                ▼
+  Extract Requests / Commitments / Check Available vs Needed Evidence
+                                │
+                                ▼
+       Case Reassessment & Propose Next Action for Human Approval
+```
+
+### 2. Endpoints
+- **`POST /api/cases/{case_id}/simulate-response`**:
+  Accepts:
+  ```json
+  {
+    "response_text": "We acknowledge your repair complaint. Please upload your second repair receipt/job sheet.",
+    "related_action_id": "<action_uuid>",
+    "provider_name": "Official Service Center"
+  }
+  ```
+  - Validates that `related_action_id` strictly belongs to the specified case.
+  - Automatically transitions an `AWAITING_RESPONSE` case into `UNDER_REVIEW`.
+  - Automatically completes/executes any related `SCHEDULE_FOLLOW_UP` action.
+  - Adds a `SIMULATED_RESPONSE_RECEIVED` timeline event marked with `source_type: SIMULATION`.
+
+- **`POST /api/cases/{case_id}/responses/{response_id}/process`**:
+  Analyzes response contents against attached evidence and policy guidelines.
+  Returns:
+  - `requested_information`: Identified document or detail inquiries.
+  - `evidence_already_available`: Documents requested that already exist in case evidence attachments.
+  - `evidence_still_needed`: Documents requested that are not yet provided.
+  - `identified_commitments`: Commitments, offers, or deadlines provided by the vendor.
+  - `ambiguities`: Non-committal or conditional statements.
+  - `suggested_action`: A draft proposed follow-up action (never auto-executed).
+  - `suggested_case_status`: Recommended next status transition (`COLLECTING_EVIDENCE` or `UNDER_REVIEW`).
+  - Idempotent: repeated calls on a processed response return cached results without creating duplicate timeline events.
 
 ---
 
@@ -127,11 +180,6 @@ ResolveAI enforces human-in-the-loop control for any consequential action. The A
   - The AI model is strictly prohibited from approving actions on the user's behalf.
   - Idempotent execution: Calling execute on an already executed action returns the existing record without duplicating effects.
 
-### 2. Simulated Environment Execution
-- **`SEND_MESSAGE`**: Simulated delivery dispatches to an internal simulation log. No real external emails, SMS, or manufacturer APIs are invoked.
-- **`SCHEDULE_FOLLOW_UP`**: Records the due timestamp in persistent SQLite storage. No external calendar or third-party webhooks are fired.
-- **Real-Time Overdue Calculation**: `GET /api/cases/{case_id}/follow-ups` dynamically evaluates current UTC time against `due_at` to mark `is_overdue: true` if the deadline has elapsed.
-
 ---
 
 ## Policy Retrieval & Case Reasoning (Phase 4)
@@ -143,17 +191,11 @@ The policy library is seeded idempotently on application startup into the `polic
 - **Illustrative Standards**: Clearly labeled with `DEMO POLICY — NOT AN OFFICIAL MANUFACTURER POLICY` (e.g., replacement escalation thresholds after 2 repair attempts).
 - **Reference pointer**: The National Consumer Helpline entry stores a link only. It is classified as general guidance and contains no verified quote or legal rule.
 - **Best Practice Evidence Guidelines**: Checklists and guidance for chain-of-custody in repeat repair disputes.
-- **Offline Reliability**: Seeding is local and does not require internet connectivity.
 
 ### 2. Lexical Policy Retrieval
 - The `PolicyRetrievalService` implements lexical keyword matching with frequency weighting and title boost.
 - Breaks policy documents into discrete passages and returns passages with relevance scores.
 - Rejects empty queries and returns empty lists for irrelevant queries without fabricating citations.
-
-### 3. Demo Mode and Provider Availability
-- **Default Engine**: `AI_PROVIDER=demo` (Deterministic Rule-Based Engine).
-- **Zero API Key Requirement**: Runs completely locally with no external API subscription needed.
-- **Distinction of Facts**: Separates user-reported facts, extracted document snippets, policy passages, and AI inferences.
 
 ---
 
@@ -168,12 +210,6 @@ The policy library is seeded idempotently on application startup into the `polic
 - Default: **10 MB** (10,485,760 bytes). Configurable via `MAX_UPLOAD_SIZE_BYTES` in `.env`.
 - Uploads are streamed in bounded chunks to prevent high memory consumption.
 
-### Local File Storage & Security:
-- Files are saved to `./uploads/` (or configured `UPLOAD_DIR`).
-- Stored using random server-generated UUID filenames (`<hex>.<ext>`) to prevent directory traversal attacks.
-- Absolute filesystem paths are never exposed over API responses.
-- Uploaded files are excluded from Git via `.gitignore`.
-
 ---
 
 ## Case Workflow Status Transitions
@@ -184,8 +220,8 @@ ResolveAI implements a controlled state machine. Invalid transitions return `HTT
 - **`COLLECTING_EVIDENCE`** ➔ `UNDER_REVIEW`, `ACTION_READY`, `CLOSED`
 - **`UNDER_REVIEW`** ➔ `COLLECTING_EVIDENCE`, `ACTION_READY`, `RESOLVED`, `CLOSED`
 - **`ACTION_READY`** ➔ `COLLECTING_EVIDENCE`, `AWAITING_RESPONSE`, `CLOSED`
-- **`AWAITING_RESPONSE`** ➔ `FOLLOW_UP_DUE`, `UNDER_REVIEW`, `RESOLVED`, `CLOSED`
-- **`FOLLOW_UP_DUE`** ➔ `UNDER_REVIEW`, `AWAITING_RESPONSE`, `RESOLVED`, `CLOSED`
+- **`AWAITING_RESPONSE`** ➔ `FOLLOW_UP_DUE`, `UNDER_REVIEW`, `COLLECTING_EVIDENCE`, `RESOLVED`, `CLOSED`
+- **`FOLLOW_UP_DUE`** ➔ `UNDER_REVIEW`, `COLLECTING_EVIDENCE`, `AWAITING_RESPONSE`, `RESOLVED`, `CLOSED`
 - **`RESOLVED`** ➔ `UNDER_REVIEW` (reopened if issue returns), `CLOSED`
 - **`CLOSED`** ➔ `UNDER_REVIEW` (reopened if further work required)
 
@@ -195,7 +231,7 @@ ResolveAI implements a controlled state machine. Invalid transitions return `HTT
 
 - **Default Location**: `backend/data/resolveai.db` (auto-created on startup).
 - **Persistent**: Survives backend restarts.
-- **Schema setup**: `init_db()` uses SQLAlchemy `create_all()` to create missing tables. This safely creates the `actions` table and preserves all existing `cases`, `case_events`, `evidence`, and `policy_sources` data without alteration.
+- **Schema setup**: `init_db()` uses SQLAlchemy `create_all()` to create missing tables. This safely creates the `simulated_responses` table and preserves all existing `cases`, `case_events`, `evidence`, `actions`, and `policy_sources` data without alteration.
 
 ---
 
@@ -207,4 +243,4 @@ Run the full pytest suite from the `backend/` directory:
 python3 -m pytest -v
 ```
 
-All 67 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and temporary upload directories.
+All 73 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and temporary upload directories.
