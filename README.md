@@ -4,7 +4,18 @@
 > ResolveAI helps consumers manage recurring product-repair problems, starting with a laptop that develops the same fault again after two repair attempts.
 
 ---
+## Screenshots
 
+### 1. ResolveAI Dashboard
+![ResolveAI Dashboard](screenshots/dashboard.jpeg)
+
+### 2. AI Assistant
+![AI Assistant and Evidence](screenshots/case_AI_assistance.jpeg)
+
+### 3. Action Approval and Workflow
+![Action Approval Workflow](screenshots/action_approval.jpeg)
+
+---
 ## Backend — Phases 1 to 6: Core Agentic Workflow & Simulation
 
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.
@@ -246,16 +257,7 @@ python3 -m pytest -v
 All 73 unit and integration tests run against an **isolated in-memory SQLite database** (`sqlite:///:memory:`) and temporary upload directories.
 
 
-## Screenshots
 
-### 1. ResolveAI Dashboard
-![ResolveAI Dashboard](screenshots/dashboard.jpeg)
-
-### 2. AI Assistant
-![AI Assistant and Evidence](screenshots/case_AI_assistance.jpeg)
-
-### 3. Action Approval and Workflow
-![Action Approval Workflow](screenshots/action_approval.jpeg)
 
 ### 4. Evidence Timeline
 ![Evidence Timeline](screenshots/evidence_timeline.jpeg)
