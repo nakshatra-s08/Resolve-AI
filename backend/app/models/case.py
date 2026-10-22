@@ -33,6 +33,7 @@ VALID_STATUS_TRANSITIONS = {
     CaseStatus.UNDER_REVIEW: {
         CaseStatus.COLLECTING_EVIDENCE,
         CaseStatus.ACTION_READY,
+        CaseStatus.AWAITING_RESPONSE,
         CaseStatus.RESOLVED,
         CaseStatus.CLOSED,
     },
@@ -126,4 +127,12 @@ class Case(Base):
         back_populates="case",
         cascade="all, delete-orphan",
         order_by="SimulatedResponse.created_at.desc()",
+    )
+
+    # Relationship to persistent workflow state with cascade delete
+    workflow_state = relationship(
+        "CaseWorkflowState",
+        back_populates="case",
+        uselist=False,
+        cascade="all, delete-orphan",
     )

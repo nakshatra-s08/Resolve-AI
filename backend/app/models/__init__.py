@@ -4,6 +4,7 @@ from app.models.evidence import Evidence, EvidenceType, ExtractionStatus
 from app.models.policy import PolicySource, PolicySourceType
 from app.models.action import Action, ActionType, ActionStatus
 from app.models.response import SimulatedResponse, ResponseProcessingStatus
+from app.models.workflow import CaseWorkflowState, WorkflowStage, WorkflowWaitState
 
 __all__ = [
     "Case",
@@ -22,4 +23,7 @@ __all__ = [
     "ActionStatus",
     "SimulatedResponse",
     "ResponseProcessingStatus",
+    "CaseWorkflowState",
+    "WorkflowStage",
+    "WorkflowWaitState",
 ]

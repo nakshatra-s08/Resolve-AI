@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme {
+  --color-nav-deep: #131921;
+  --color-nav-container: #232f3e;
+  --color-nav-hover: #37475A;
+  --color-surface-canvas: #EAEDED;
+  --color-surface-subtle: #F3F3F3;
+  --color-surface-card: #FFFFFF;
+  --color-border-subtle: #D5D9D9;
+  --color-border-focus: #007185;
+  --color-text-primary: #0F1111;
+  --color-text-secondary: #565959;
+  --color-text-muted: #75777C;
+  --color-amazon-yellow: #FFD814;
+  --color-amazon-yellow-hover: #F7CA00;
+  --color-amazon-yellow-border: #FCD200;
+  --color-amazon-orange: #FF9900;
+  --color-amazon-orange-hover: #E68A00;
+  --color-link-teal: #007185;
+  --color-link-teal-hover: #C7511F;
+  --color-status-success: #067D62;
+  --color-status-alert: #B12704;
+  --color-status-warning: #C45500;
+  --font-heading: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-surface-canvas);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Custom scrollbar for compact utility panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F3F3F3;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C5C6CC;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #75777C;
+}
+
+/* ResolveAI AI Processing Animations */
+@keyframes resolveai-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes resolveai-orbit {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes resolveai-bounce-dot {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.animate-resolveai-pulse {
+  animation: resolveai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-resolveai-orbit {
+  animation: resolveai-orbit 1.6s linear infinite;
+}
+
+.animate-resolveai-dot-1 {
+  animation: resolveai-bounce-dot 1.3s infinite ease-in-out both;
+  animation-delay: 0s;
+}
+
+.animate-resolveai-dot-2 {
+  animation: resolveai-bounce-dot 1.3s infinite ease-in-out both;
+  animation-delay: 0.2s;
+}
+
+.animate-resolveai-dot-3 {
+  animation: resolveai-bounce-dot 1.3s infinite ease-in-out both;
+  animation-delay: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-resolveai-pulse,
+  .animate-resolveai-orbit,
+  .animate-resolveai-dot-1,
+  .animate-resolveai-dot-2,
+  .animate-resolveai-dot-3 {
+    animation: none !important;
+    opacity: 0.85 !important;
+    transform: none !important;
+  }
+}
+

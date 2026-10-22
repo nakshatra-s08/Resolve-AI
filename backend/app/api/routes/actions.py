@@ -311,6 +311,11 @@ def reject_action(
     db.add(event)
     db.commit()
     db.refresh(action)
+
+    from app.services.orchestrator import OrchestrationService
+    orchestrator = OrchestrationService(db)
+    orchestrator.reassess_case(case_id=action.case_id)
+    db.commit()
     return action
 
 
@@ -378,6 +383,11 @@ def execute_action(
     db.add(event)
     db.commit()
     db.refresh(action)
+
+    from app.services.orchestrator import OrchestrationService
+    orchestrator = OrchestrationService(db)
+    orchestrator.reassess_case(case_id=action.case_id)
+    db.commit()
 
     return ActionExecutionResponse(
         action_id=action.id,

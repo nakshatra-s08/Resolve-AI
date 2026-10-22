@@ -52,6 +52,14 @@ class ResponseProcessingService:
             else:
                 evidence_still_needed.append("Original purchase invoice")
 
+        # Check for warranty card / documentation requests
+        if any(w in text_lower for w in ["warranty card", "warranty document", "warranty certificate", "proof of warranty", "copy of warranty"]):
+            requested_info.append("Warranty documentation / card")
+            if "WARRANTY" in rep_categories:
+                evidence_already_available.append("Warranty document (already attached to case)")
+            else:
+                evidence_still_needed.append("Warranty documentation / card")
+
         # Check for date or diagnostic details requested
         if any(w in text_lower for w in ["exact date", "when did", "describe", "serial number"]):
             requested_info.append("Specific timeline dates / serial number confirmation")

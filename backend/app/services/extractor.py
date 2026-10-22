@@ -83,3 +83,73 @@ def classify_document(filename: str, extracted_text: Optional[str] = None) -> Ev
         return EvidenceType.SERVICE_COMMUNICATION
 
     return EvidenceType.OTHER
+
+
+def sanitize_extracted_snippet(text: str, max_chars: int = 200) -> str:
+    """
+    Sanitize extracted text snippet to prevent leaking personal information,
+    addresses, phone numbers, and emails into logs or assistant context.
+    """
+    if not text:
+        return ""
+
+    sanitized = text
+    # Mask emails
+    sanitized = re.sub(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", "[EMAIL REDACTED]", sanitized)
+    # Mask phone numbers (10+ digits with optional separators)
+    sanitized = re.sub(r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", "[PHONE REDACTED]", sanitized)
+    # Mask explicit address lines
+    sanitized = re.sub(r"(?i)\b(address|flat no|plot no|street|road|lane|nagar|colony|apartment|sector)\b[^\n,;]{5,40}", "[ADDRESS REDACTED]", sanitized)
+    # Mask Indian pin codes / zip codes (e.g., 6 digits)
+    sanitized = re.sub(r"\b\d{6}\b", "[POSTAL CODE REDACTED]", sanitized)
+
+    # Normalize whitespace
+    clean_snippet = " ".join(sanitized.split())
+    if len(clean_snippet) > max_chars:
+        return clean_snippet[:max_chars] + "..."
+    return clean_snippet
+
+
+def assess_evidence_relevance(
+    filename: str,
+    extracted_text: Optional[str],
+    product_name: str,
+    issue_description: str,
+) -> Tuple[str, str]:
+    """
+    Assess evidence relevance conservatively against the reported case product and issue.
+    Returns: (relevance_status, relevance_reason)
+    Possible statuses: 'MISMATCH', 'RELEVANT', 'UNVERIFIED'
+    """
+    combined_content = f"{filename} {extracted_text or ''}".lower()
+
+    # Academic, coursework, or unrelated workplace document indicators
+    unrelated_academic_indicators = [
+        "lab manual", "laboratory", "experiment", "teleportation", "quantum",
+        "mathematics", "calculus", "differential equations", "theorem",
+        "curriculum", "syllabus", "assignment", "semester", "university",
+        "offer letter", "employment agreement", "ctc", "salary slip", "internship",
+    ]
+
+    for indicator in unrelated_academic_indicators:
+        if indicator in combined_content:
+            return "MISMATCH", f"Document appears unrelated to hardware repair (detected '{indicator}'). Content not admitted as verified case fact."
+
+    # Product-specific keyword tokens
+    product_tokens = [t.lower() for t in re.findall(r"\w+", product_name) if len(t) >= 3]
+    # Standard hardware repair keywords
+    repair_keywords = [
+        "repair", "service", "invoice", "receipt", "warranty", "serial",
+        "defect", "fault", "technician", "job sheet", "replacement",
+        "hardware", "sound", "headphone", "audio", "battery", "motherboard",
+        "screen", "display", "power", "charger"
+    ]
+
+    has_product_match = any(token in combined_content for token in product_tokens)
+    has_repair_match = any(kw in combined_content for kw in repair_keywords)
+
+    if has_product_match and has_repair_match:
+        return "RELEVANT", "Document references product and hardware/service terminology."
+
+    # Conservative default when neither clear mismatch nor clear correlation exists
+    return "UNVERIFIED", "Relevance not verified. Category presence does not verify authenticity or case correlation."

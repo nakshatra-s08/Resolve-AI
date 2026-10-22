@@ -29,6 +29,10 @@ from app.schemas.response import (
     SimulatedResponseRead,
     ResponseProcessingResult,
 )
+from app.schemas.workflow import (
+    WorkflowStateRead,
+    WorkflowStateUpdate,
+)
 
 __all__ = [
     "CaseCreate",
@@ -60,4 +64,6 @@ __all__ = [
     "SimulatedResponseCreate",
     "SimulatedResponseRead",
     "ResponseProcessingResult",
+    "WorkflowStateRead",
+    "WorkflowStateUpdate",
 ]

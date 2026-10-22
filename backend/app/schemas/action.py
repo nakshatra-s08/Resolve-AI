@@ -19,6 +19,16 @@ class SendMessagePayload(BaseModel):
             raise ValueError(f"{info.field_name} cannot be empty or whitespace only")
         return stripped
 
+    @field_validator("subject", mode="before")
+    @classmethod
+    def clamp_subject(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and isinstance(value, str):
+            stripped = value.strip()
+            if len(stripped) > 255:
+                return stripped[:252] + "..."
+            return stripped
+        return value
+
 
 class ScheduleFollowUpPayload(BaseModel):
     """Payload definition for SCHEDULE_FOLLOW_UP action."""
@@ -40,6 +50,16 @@ class ActionCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255, description="Short summary of action")
     description: str = Field(..., min_length=1, description="Context and justification for the action")
     payload: Dict[str, Any] = Field(..., description="Action-specific structured payload")
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def clamp_title(cls, value: str) -> str:
+        if isinstance(value, str):
+            stripped = value.strip()
+            if len(stripped) > 255:
+                return stripped[:252] + "..."
+            return stripped
+        return value
 
     @field_validator("title", "description")
     @classmethod

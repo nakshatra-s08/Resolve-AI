@@ -18,8 +18,12 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
 
     # AI Reasoning Provider Configuration
-    # Only demo runs; credentialed live providers currently return HTTP 503.
+    # Supported providers: "demo", "ollama", "openai", "gemini"
     AI_PROVIDER: str = "demo"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2:latest"
+    OLLAMA_TIMEOUT_SECONDS: float = 60.0
+    OLLAMA_CONNECT_TIMEOUT_SECONDS: float = 5.0
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o"
     GEMINI_API_KEY: Optional[str] = None

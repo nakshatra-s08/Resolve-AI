@@ -110,6 +110,9 @@ class CaseStatusUpdate(BaseModel):
     )
 
 
+from app.schemas.workflow import WorkflowStateRead
+
+
 class CaseRead(BaseModel):
     """Schema for returning case details."""
     id: str
@@ -119,6 +122,7 @@ class CaseRead(BaseModel):
     status: CaseStatus
     created_at: datetime
     updated_at: datetime
+    workflow_state: Optional[WorkflowStateRead] = None
 
     model_config = ConfigDict(
         from_attributes=True,

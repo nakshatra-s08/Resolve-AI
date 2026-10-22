@@ -14,6 +14,7 @@ from app.services.storage import (
     discard_staged_file,
 )
 from app.services.extractor import extract_text_from_file, classify_document
+from app.services.orchestrator import OrchestrationService
 
 router = APIRouter(prefix="/cases/{case_id}", tags=["Evidence"])
 
@@ -91,6 +92,9 @@ async def upload_evidence(
             },
         )
         db.add(event)
+        db.flush()
+        orchestrator = OrchestrationService(db)
+        orchestrator.reassess_case(db_case.id, record_event=False)
         db.commit()
         db.refresh(db_evidence)
 
@@ -223,7 +227,10 @@ def delete_case_evidence(
     )
     db.add(event)
     db.delete(db_evidence)
+    db.flush()
     try:
+        orchestrator = OrchestrationService(db)
+        orchestrator.reassess_case(case_id, record_event=False)
         db.commit()
     except Exception as exc:
         db.rollback()
@@ -269,8 +276,9 @@ def get_evidence_checklist(
     missing = [cat for cat in BASELINE_CATEGORIES if cat not in existing_types]
 
     explanation = (
-        "This checklist is a heuristic completeness aid to help organize your case. "
-        "Missing categories do not legally invalidate a claim or complaint."
+        "This checklist measures document category coverage as an organizational completeness aid. "
+        "Category presence does not verify the quality, authenticity, or case relevance of uploaded documents. "
+        "Missing categories do not legally invalidate a claim or grievance."
     )
 
     return EvidenceChecklistResponse(

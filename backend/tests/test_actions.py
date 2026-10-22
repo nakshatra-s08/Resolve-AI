@@ -261,3 +261,54 @@ def test_follow_up_scheduling_and_overdue_calculation(client: TestClient):
     fu_map = {f["title"]: f for f in follow_ups}
     assert fu_map["Past check"]["is_overdue"] is True
     assert fu_map["Future check"]["is_overdue"] is False
+
+
+def test_draft_action_from_long_recommendation(client: TestClient):
+    """Actions constructed from long recommendations or subjects are clamped safely and created in PENDING_APPROVAL."""
+    case_resp = client.post(
+        "/api/cases",
+        json={
+            "title": "Lemon Escalation Case",
+            "product_name": "Asus ROG Strix",
+            "issue_description": "Motherboard and audio jack repeated failure after multiple service trips.",
+        },
+    )
+    case_id = case_resp.json()["id"]
+
+    # 1. Run analysis to get the statutory recommendation
+    analysis_resp = client.post(f"/api/cases/{case_id}/analysis")
+    assert analysis_resp.status_code == status.HTTP_200_OK
+    analysis_data = analysis_resp.json()
+    recommended_step = analysis_data["recommended_next_step"]
+
+    # 2. Simulate drafting action with long subject / title
+    raw_subject = f"Formal Escalation - {recommended_step} - Comprehensive Warranty Claim"
+    payload = {
+        "action_type": "SEND_MESSAGE",
+        "title": recommended_step,
+        "description": analysis_data["summary"],
+        "payload": {
+            "recipient": "Official Service Provider",
+            "subject": raw_subject,
+            "message_body": analysis_data["summary"],
+            "is_simulated": True,
+        },
+    }
+
+    create_resp = client.post(f"/api/cases/{case_id}/actions", json=payload)
+    assert create_resp.status_code == status.HTTP_201_CREATED
+    action_data = create_resp.json()
+    assert action_data["status"] == "PENDING_APPROVAL"
+    assert len(action_data["payload_json"]["subject"]) <= 255
+    assert len(action_data["title"]) <= 255
+    action_id = action_data["id"]
+
+    # 3. Approve action
+    appr_resp = client.post(f"/api/actions/{action_id}/approve")
+    assert appr_resp.status_code == status.HTTP_200_OK
+    assert appr_resp.json()["status"] == "APPROVED"
+
+    # 4. Execute action
+    exec_resp = client.post(f"/api/actions/{action_id}/execute")
+    assert exec_resp.status_code == status.HTTP_200_OK
+    assert exec_resp.json()["status"] == "EXECUTED"

@@ -295,3 +295,44 @@ def test_malformed_pdf_graceful_handling(client: TestClient):
     data = response.json()
     assert data["extraction_status"] == "FAILED"
     assert data["extracted_text"] is None
+
+
+def test_evidence_relevance_and_privacy_handling(client: TestClient):
+    """Irrelevant/academic documents are detected as MISMATCH and PII is sanitized."""
+    from app.services.extractor import assess_evidence_relevance, sanitize_extracted_snippet
+    from app.services.context import CaseContextService
+
+    # 1. Relevance Assessment
+    rel_academic, reason1 = assess_evidence_relevance(
+        filename="Physics_Lab_Manual_Quantum_Teleportation.pdf",
+        extracted_text="Experiment 4: Quantum teleportation protocol using entanglement.",
+        product_name="Sony WHM1000X",
+        issue_description="Headphones do not turn on",
+    )
+    assert rel_academic == "MISMATCH"
+    assert "detected '" in reason1.lower()
+
+    rel_offer, reason2 = assess_evidence_relevance(
+        filename="Offer_Letter_Alex.pdf",
+        extracted_text="We are pleased to offer you employment with CTC of 15 LPA.",
+        product_name="Sony WHM1000X",
+        issue_description="Headphones do not turn on",
+    )
+    assert rel_offer == "MISMATCH"
+    assert "detected '" in reason2.lower()
+
+    rel_valid, reason3 = assess_evidence_relevance(
+        filename="Sony_Service_JobSheet.pdf",
+        extracted_text="Sony WHM1000X headphone hardware repair diagnosis and battery replacement defect.",
+        product_name="Sony WHM1000X",
+        issue_description="Headphones do not turn on",
+    )
+    assert rel_valid == "RELEVANT"
+
+    # 2. Privacy & PII sanitization
+    raw_snippet = "Contact alex@example.com at +91 9876543210 in Flat No 402 Sector 62. Postal code 560001."
+    sanitized = sanitize_extracted_snippet(raw_snippet)
+    assert "[EMAIL REDACTED]" in sanitized
+    assert "[PHONE REDACTED]" in sanitized
+    assert "[ADDRESS REDACTED]" in sanitized
+    assert "alex@example.com" not in sanitized

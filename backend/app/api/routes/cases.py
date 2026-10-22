@@ -6,6 +6,9 @@ from app.models.case import Case, CaseStatus, VALID_STATUS_TRANSITIONS, get_utc_
 from app.models.event import CaseEvent, EventType, EventSource
 from app.schemas.case import CaseCreate, CaseUpdate, CaseStatusUpdate, CaseRead
 from app.schemas.event import CaseEventCreate, CaseEventRead
+from app.models.workflow import CaseWorkflowState
+from app.schemas.workflow import WorkflowStateRead
+from app.services.orchestrator import OrchestrationService
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
@@ -33,6 +36,8 @@ def create_case(case_in: CaseCreate, db: Session = Depends(get_db)) -> Case:
         },
     )
     db.add(event)
+    orchestrator = OrchestrationService(db)
+    orchestrator.get_or_create_workflow_state(db_case)
     db.commit()
     db.refresh(db_case)
     return db_case
@@ -53,6 +58,11 @@ def get_case(case_id: str, db: Session = Depends(get_db)) -> Case:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID '{case_id}' was not found.",
         )
+    if not db_case.workflow_state:
+        orchestrator = OrchestrationService(db)
+        orchestrator.get_or_create_workflow_state(db_case)
+        db.commit()
+        db.refresh(db_case)
     return db_case
 
 
@@ -152,6 +162,9 @@ def update_case_status(
         },
     )
     db.add(event)
+    db.flush()
+    orchestrator = OrchestrationService(db)
+    orchestrator.reassess_case(db_case.id, record_event=False)
     db.commit()
     db.refresh(db_case)
     return db_case
@@ -212,3 +225,35 @@ def get_case_timeline(
         .all()
     )
     return events
+
+
+@router.get("/{case_id}/workflow-state", response_model=WorkflowStateRead)
+def get_case_workflow_state(case_id: str, db: Session = Depends(get_db)) -> CaseWorkflowState:
+    """Retrieve the persistent agentic workflow state for a case."""
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case with ID '{case_id}' was not found.",
+        )
+    orchestrator = OrchestrationService(db)
+    state = orchestrator.get_or_create_workflow_state(case)
+    db.commit()
+    db.refresh(state)
+    return state
+
+
+@router.post("/{case_id}/reassess", response_model=WorkflowStateRead)
+def reassess_case_workflow(case_id: str, db: Session = Depends(get_db)) -> CaseWorkflowState:
+    """Trigger agentic case reassessment and update persistent workflow state."""
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case with ID '{case_id}' was not found.",
+        )
+    orchestrator = OrchestrationService(db)
+    state = orchestrator.reassess_case(case_id)
+    db.commit()
+    db.refresh(state)
+    return state

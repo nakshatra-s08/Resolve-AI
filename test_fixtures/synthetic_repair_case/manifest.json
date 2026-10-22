@@ -1,0 +1,87 @@
+{
+  "fixture": "synthetic_repair_case",
+  "status": "fictional test data; no real record or provider communication",
+  "disclaimer_required": "SYNTHETIC TEST DOCUMENT — NOT A REAL RECORD",
+  "case_facts": {
+    "case_reference": "SIM-CASE-2601",
+    "customer": "Mira Sen",
+    "customer_address": "42 Example Crescent, Fictional Nagar, Chennai, Tamil Nadu 600000",
+    "product": "Sony WHM1000X wireless headphones",
+    "model": "WHM1000X",
+    "reported_fault": "Unexpectedly powers off after approximately two minutes of playback",
+    "purchase_date": "2025-01-14",
+    "invoice_reference": "SIM-INV-250114-017",
+    "fictional_purchase_amount_inr": "18999.00",
+    "illustrative_coverage_start": "2025-01-14",
+    "illustrative_coverage_end": "2026-01-13",
+    "repair_visits": [
+      {
+        "date": "2025-02-03",
+        "job_reference": "SIM-JOB-250203-A",
+        "work": "Battery connector reseated and simulated firmware reset",
+        "outcome": "20-minute check without shutdown"
+      },
+      {
+        "date": "2025-03-18",
+        "job_reference": "SIM-JOB-250318-B",
+        "work": "Charging-port contacts cleaned and fictional test battery pack replaced",
+        "outcome": "30-minute check without shutdown"
+      }
+    ],
+    "recurrence_reported_date": "2025-03-22",
+    "simulated_evidence_request_date": "2025-03-24",
+    "simulated_resolution_offer_date": "2025-03-27",
+    "simulated_proposal": "Replacement subject to identity/serial confirmation, inspection, return of original unit/accessories, and stock availability",
+    "unresolved_offer_details": [
+      "inspection process and location",
+      "stock timing",
+      "replacement model/specification",
+      "shipping costs",
+      "handling of accessories"
+    ],
+    "legal_entitlement_claimed": false
+  },
+  "documents": [
+    {
+      "filename": "01_synthetic_purchase_invoice.pdf",
+      "category": "purchase_invoice",
+      "expected_workflow_test": "Fictional transaction and amount extraction; link product/model and customer."
+    },
+    {
+      "filename": "02_synthetic_warranty_certificate.pdf",
+      "category": "warranty_document",
+      "expected_workflow_test": "Coverage date extraction and distinguish illustrative terms from actual policy."
+    },
+    {
+      "filename": "03_first_repair_job_sheet.pdf",
+      "category": "repair_record",
+      "expected_workflow_test": "Extract first fault, inspection, repair, outcome and job reference."
+    },
+    {
+      "filename": "04_second_repair_job_sheet.pdf",
+      "category": "repair_record",
+      "expected_workflow_test": "Connect repeat fault and second distinct repair; capture recurrence report."
+    },
+    {
+      "filename": "05_customer_service_email_thread.pdf",
+      "category": "customer_correspondence",
+      "expected_workflow_test": "Identify recurrence, acknowledgement, document request and chronology."
+    },
+    {
+      "filename": "06_simulated_provider_evidence_request.pdf",
+      "category": "provider_response",
+      "expected_workflow_test": "Process simulated request for second job sheet; detect requested missing evidence."
+    },
+    {
+      "filename": "07_simulated_provider_resolution_offer.pdf",
+      "category": "provider_response",
+      "expected_workflow_test": "Extract conditional replacement proposal, unresolved details and avoid entitlement inference."
+    }
+  ],
+  "isolation": {
+    "application_code_changed": false,
+    "production_database_touched": false,
+    "uploaded_to_application": false,
+    "application_cases_created": false
+  }
+}

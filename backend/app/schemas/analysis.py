@@ -19,7 +19,7 @@ class AnalysisMissingInfo(BaseModel):
 class CaseAnalysisResponse(BaseModel):
     """Structured case-aware analysis and recommendation schema."""
     case_id: str
-    engine_mode: Literal["demo", "live"]
+    engine_mode: Literal["demo", "live", "ollama"]
     summary: str
     recommended_next_step: str
     reasoning: str
@@ -40,7 +40,7 @@ class CaseChatRequest(BaseModel):
 class CaseChatResponse(BaseModel):
     """Response schema for case chat."""
     case_id: str
-    engine_mode: Literal["demo", "live"]
+    engine_mode: Literal["demo", "live", "ollama"]
     question: str
     answer: str
     distinction_notes: List[str] = Field(

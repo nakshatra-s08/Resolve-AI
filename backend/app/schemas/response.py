@@ -3,6 +3,8 @@ from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models.response import ResponseProcessingStatus
 from app.schemas.policy import PolicySearchResultItem
+from app.schemas.action import ActionRead
+from app.schemas.workflow import WorkflowStateRead
 
 
 class SimulatedResponseCreate(BaseModel):
@@ -84,5 +86,13 @@ class ResponseProcessingResult(BaseModel):
     suggested_case_status: Optional[str] = Field(
         None,
         description="Recommended next status transition for the case (e.g. COLLECTING_EVIDENCE or UNDER_REVIEW)",
+    )
+    workflow_state: Optional[WorkflowStateRead] = Field(
+        None,
+        description="Persisted agentic workflow state after reassessment",
+    )
+    proposed_action: Optional[ActionRead] = Field(
+        None,
+        description="Newly proposed or active PENDING_APPROVAL action, if created",
     )
     processed_at: datetime

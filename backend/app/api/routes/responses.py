@@ -12,9 +12,12 @@ from app.schemas.response import (
     SimulatedResponseRead,
     ResponseProcessingResult,
 )
+from app.schemas.action import ActionRead
+from app.schemas.workflow import WorkflowStateRead
 from app.services.context import CaseContextService
 from app.services.retrieval import PolicyRetrievalService
 from app.services.response_processor import ResponseProcessingService
+from app.services.orchestrator import OrchestrationService
 
 router = APIRouter(prefix="/cases/{case_id}", tags=["Simulated Responses"])
 
@@ -211,7 +214,22 @@ def process_simulated_response(
                 )
             )
 
-    # 5. Persist processing result and update status
+    # 5. Reassess case and persist workflow state via OrchestrationService
+    orchestrator = OrchestrationService(db)
+    workflow_state = orchestrator.reassess_case(
+        case_id=case_id,
+        triggered_by_response=response,
+        processing_result=result,
+    )
+
+    if workflow_state:
+        result.workflow_state = WorkflowStateRead.model_validate(workflow_state)
+        if workflow_state.active_action_id:
+            active_act = db.query(Action).filter(Action.id == workflow_state.active_action_id).first()
+            if active_act:
+                result.proposed_action = ActionRead.model_validate(active_act)
+
+    # 6. Persist processing result and update status
     now = get_utc_now()
     response.status = ResponseProcessingStatus.PROCESSED
     response.processed_at = now
@@ -228,6 +246,8 @@ def process_simulated_response(
             "engine_mode": result.engine_mode,
             "still_needed": result.evidence_still_needed,
             "commitments": result.identified_commitments,
+            "stage": workflow_state.stage.value if workflow_state else None,
+            "wait_state": workflow_state.wait_state.value if workflow_state else None,
         },
     )
     db.add(event)

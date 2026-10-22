@@ -51,22 +51,33 @@ class CaseContextService:
             .all()
         )
 
+        from app.services.extractor import assess_evidence_relevance, sanitize_extracted_snippet
+
         evidence_items = []
         represented_categories = set()
 
         for ev in evidence_records:
             represented_categories.add(ev.evidence_type)
+            rel_status, rel_reason = assess_evidence_relevance(
+                filename=ev.original_filename,
+                extracted_text=ev.extracted_text,
+                product_name=case.product_name,
+                issue_description=case.issue_description,
+            )
+
             item = {
                 "id": ev.id,
                 "filename": ev.original_filename,
                 "type": ev.evidence_type.value,
                 "extraction_status": ev.extraction_status.value,
+                "relevance_status": rel_status,
+                "relevance_reason": rel_reason,
                 "extracted_text_snippet": None,
             }
-            # Only include extracted text if extraction was COMPLETED
-            if ev.extraction_status == ExtractionStatus.COMPLETED and ev.extracted_text:
-                # Bounded snippet (first 1000 characters) to avoid prompt bloat
-                item["extracted_text_snippet"] = ev.extracted_text[:1000]
+            # Only include extracted text if extraction was COMPLETED and not a confirmed MISMATCH
+            if ev.extraction_status == ExtractionStatus.COMPLETED and ev.extracted_text and rel_status != "MISMATCH":
+                # Sanitize to prevent leaking addresses/emails/phone numbers
+                item["extracted_text_snippet"] = sanitize_extracted_snippet(ev.extracted_text, max_chars=400)
 
             evidence_items.append(item)
 
@@ -92,6 +103,15 @@ class CaseContextService:
             for r in responses
         ]
 
+        # Extract identified provider commitments
+        commitments = []
+        for r in responses:
+            if r.processing_result_json and isinstance(r.processing_result_json, dict):
+                comms = r.processing_result_json.get("identified_commitments") or []
+                for c in comms:
+                    if c not in commitments:
+                        commitments.append(c)
+
         # Synthesize search query for policy retrieval
         search_query = f"{case.product_name} {case.issue_description} repeat repair failure"
 
@@ -110,5 +130,6 @@ class CaseContextService:
             ],
             "missing_categories": missing_categories,
             "responses": response_summaries,
+            "commitments": commitments,
             "suggested_query": search_query,
         }
