@@ -15,6 +15,9 @@
 ### 3. Action Approval and Workflow
 ![Action Approval Workflow](screenshots/action_approval.jpeg)
 
+### 4. Evidence Timeline
+![Evidence Timeline](screenshots/evidence_timeline.jpeg)
+
 ---
 ## Backend — Phases 1 to 6: Core Agentic Workflow & Simulation
 
@@ -258,7 +261,4 @@ All 73 unit and integration tests run against an **isolated in-memory SQLite dat
 
 
 
-
-### 4. Evidence Timeline
-![Evidence Timeline](screenshots/evidence_timeline.jpeg)
 
