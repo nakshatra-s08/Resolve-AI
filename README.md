@@ -10,7 +10,7 @@
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.
 
 ### Technology Stack
-- **Python**: 3.14+ (compatible with Python 3.10+)
+- **Python**: 3.14+ 
 - **FastAPI**: 0.115+
 - **Uvicorn**: 0.30+
 - **SQLAlchemy**: 2.0+
@@ -26,9 +26,9 @@ This repository contains the backend for ResolveAI, built with **Python**, **Fas
 
 Follow these simple steps in Terminal on macOS:
 
-### 1. Navigate to the project backend
+### 1. Clone the repository
 ```bash
-cd "Desktop/Projects/Amazon-Handling Agentic Workflow/backend"
+go to terminal and enter "git clone "https://github.com/nakshatra-s08/Resolve-AI"
 ```
 
 ### 2. Create and activate a Python virtual environment (recommended)
