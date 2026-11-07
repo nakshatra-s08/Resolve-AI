@@ -286,7 +286,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EAEDED] flex flex-col">
+    <div className="min-h-screen bg-[#F7F6F3] flex flex-col">
       {/* Navigation Bar */}
       <Navbar
         currentTab={currentTab}
@@ -305,11 +305,11 @@ export function App() {
       <main className="w-full pt-28 pb-16 flex-1">
         <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
           {errorBanner && (
-            <div className="mb-4 p-3 bg-[#FCF4F2] border border-[#F2BEB1] rounded text-xs text-[#B12704] flex items-center justify-between">
+            <div className="mb-4 p-3 bg-[#F9ECEB] border border-[#B94A48]/30 rounded-lg text-xs text-[#B94A48] flex items-center justify-between">
               <span>{errorBanner}</span>
               <button
                 onClick={() => setErrorBanner(null)}
-                className="font-bold underline ml-2"
+                className="font-bold underline ml-2 cursor-pointer"
               >
                 Dismiss
               </button>
@@ -317,7 +317,7 @@ export function App() {
           )}
 
           {loading && !activeCase && cases.length === 0 ? (
-            <div className="text-center py-20 text-xs text-[#565959]">
+            <div className="text-center py-20 text-xs text-[#625F70]">
               Connecting to ResolveAI backend and loading cases...
             </div>
           ) : (
@@ -367,8 +367,8 @@ export function App() {
               )}
 
               {currentTab === 'follow-ups' && (
-                <div className="bg-white rounded-lg p-6 shadow-sm border border-[#D5D9D9] space-y-4">
-                  <h2 className="text-lg font-bold font-['Hanken_Grotesk'] text-[#0F1111]">
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E2E8F0] space-y-4">
+                  <h2 className="text-lg font-bold font-['Hanken_Grotesk'] text-[#1E293B]">
                     Scheduled Follow-ups Across All Cases ({followUps.length})
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -376,24 +376,24 @@ export function App() {
                       <div
                         key={f.action_id}
                         onClick={() => handleSelectCase(f.case_id)}
-                        className="p-4 bg-[#F9F9F9] rounded border border-[#D5D9D9] hover:border-[#007185] cursor-pointer space-y-2 text-xs transition-colors"
+                        className="p-4 bg-[#F8FAFC] rounded border border-[#E2E8F0] hover:border-[#0F766E] cursor-pointer space-y-2 text-xs transition-colors"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-[#0F1111]">{f.title}</span>
+                          <span className="font-bold text-[#1E293B]">{f.title}</span>
                           <span
                             className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                               f.is_overdue
-                                ? 'bg-[#FCF4F2] text-[#B12704]'
-                                : 'bg-[#FFF8E7] text-[#C45500]'
+                                ? 'bg-[#FEF2F2] text-[#B91C1C]'
+                                : 'bg-[#FFF7ED] text-[#C2410C]'
                             }`}
                           >
                             {f.is_overdue ? 'Overdue' : 'Pending'}
                           </span>
                         </div>
-                        <p className="text-[#565959]">
+                        <p className="text-[#475569]">
                           Case ID: #{f.case_id.slice(0, 8)} • Purpose: {f.purpose}
                         </p>
-                        <p className="text-[#565959]">Due Date: {new Date(f.due_at).toLocaleDateString()}</p>
+                        <p className="text-[#475569]">Due Date: {new Date(f.due_at).toLocaleDateString()}</p>
                       </div>
                     ))}
                   </div>
@@ -404,24 +404,23 @@ export function App() {
         </div>
       </main>
 
-      {/* Amazon Utility Footer */}
-      <footer className="w-full bg-[#131921] text-white text-xs mt-auto">
+      <footer className="w-full bg-[#312E81] text-[#F0EEFA] text-xs mt-auto border-t border-[#5B4B8A]">
         <div
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="w-full py-3 text-center bg-[#232F3E] hover:bg-[#37475A] font-semibold text-white cursor-pointer transition-colors border-b border-[#131921]"
+          className="w-full py-2.5 text-center bg-[#262366] hover:bg-[#1E1B4B] font-semibold text-[#F0EEFA] cursor-pointer transition-colors"
         >
           Back to top
         </div>
-        <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[#8A97A9]">
+        <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[#F0EEFA]/80">
           <div className="flex items-center gap-3">
             <span className="text-white font-bold font-['Hanken_Grotesk']">
               ResolveAI
             </span>
             <span>•</span>
-            <span>Amazon Developer Hackathon Prototype (Simulated Engine)</span>
+            <span>Consumer Repair Resolution Workspace</span>
           </div>
           <p className="text-[11px] text-center md:text-right">
-            Autonomous repair-resolution agent with simulated execution & provider response intake.
+            Voice-first repair intake with Gnani Prisma STT, evidence organization, and autonomous dispute assistance.
           </p>
         </div>
       </footer>

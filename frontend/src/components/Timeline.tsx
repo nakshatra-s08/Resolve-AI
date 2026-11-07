@@ -49,8 +49,10 @@ export const Timeline: React.FC<TimelineProps> = ({ events, onAddUserNote }) => 
         return <Send className="w-3.5 h-3.5 text-white" />
       case 'PROVIDER_RESPONSE_RECEIVED':
       case 'PROVIDER_RESPONSE_PROCESSED':
+      case 'SIMULATED_RESPONSE_RECEIVED':
         return <MessageSquare className="w-3.5 h-3.5 text-white" />
       case 'USER_NOTE':
+      case 'NOTE_ADDED':
         return <Clock className="w-3.5 h-3.5 text-white" />
       default:
         return <AlertCircle className="w-3.5 h-3.5 text-white" />
@@ -61,57 +63,59 @@ export const Timeline: React.FC<TimelineProps> = ({ events, onAddUserNote }) => 
     switch (type) {
       case 'ACTION_EXECUTED':
       case 'PROVIDER_RESPONSE_PROCESSED':
-        return 'bg-[#067D62]'
+        return 'bg-[#3E7C68]'
       case 'PROVIDER_RESPONSE_RECEIVED':
+      case 'SIMULATED_RESPONSE_RECEIVED':
       case 'ACTION_PROPOSED':
-        return 'bg-[#007185]'
+        return 'bg-[#D97757]'
       case 'CASE_CREATED':
       case 'EVIDENCE_UPLOADED':
-        return 'bg-[#232F3E]'
+        return 'bg-[#312E81]'
       case 'USER_NOTE':
+      case 'NOTE_ADDED':
       default:
-        return 'bg-[#75777C]'
+        return 'bg-[#5B4B8A]'
     }
   }
 
   return (
-    <div className="bg-white rounded-lg p-5 shadow-sm border border-[#D5D9D9] space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-[#EAEDED]">
+    <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E4E1E8] space-y-5">
+      <div className="flex items-center justify-between pb-3 border-b border-[#E4E1E8]">
         <div>
-          <h2 className="text-base font-bold font-['Hanken_Grotesk'] text-[#0F1111] flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#007185]" />
+          <h2 className="text-base font-bold font-['Hanken_Grotesk'] text-[#27243A] flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#5B4B8A]" />
             <span>Chronological Case Trajectory & Audit Trail</span>
           </h2>
-          <p className="text-xs text-[#565959]">
-            Full append-only audit trail recorded for this dispute
+          <p className="text-xs text-[#625F70]">
+            Append-only audit trail recorded for this dispute
           </p>
         </div>
-        <span className="text-xs font-semibold text-[#565959]">
+        <span className="text-xs font-semibold text-[#625F70]">
           {events.length} Recorded Events
         </span>
       </div>
 
       {/* Vertical Stepper */}
-      <div className="relative pl-6 space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[#D5D9D9]">
+      <div className="relative pl-6 space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[#E4E1E8]">
         {events.map((ev) => (
           <div key={ev.id} className="relative flex items-start gap-3">
             <span
               className={`absolute -left-6 top-1 h-5 w-5 rounded-full ${getEventBadgeColor(
                 ev.event_type
-              )} ring-4 ring-white flex items-center justify-center`}
+              )} ring-4 ring-white flex items-center justify-center shadow-xs`}
             >
               {getEventIcon(ev.event_type)}
             </span>
-            <div className="flex-1 bg-[#F3F3F3] p-3 rounded border border-[#D5D9D9]">
+            <div className="flex-1 bg-[#F7F6F3] p-3 rounded-lg border border-[#E4E1E8]">
               <div className="flex items-center justify-between flex-wrap gap-1">
-                <span className="text-xs font-bold text-[#0F1111]">
+                <span className="text-xs font-bold text-[#27243A]">
                   {ev.event_type.replace(/_/g, ' ')}
                 </span>
-                <span className="text-[11px] text-[#565959]">
+                <span className="text-[11px] text-[#8E8B99]">
                   {new Date(ev.created_at).toLocaleString()}
                 </span>
               </div>
-              <p className="text-xs text-[#0F1111] mt-1 whitespace-pre-wrap leading-relaxed">
+              <p className="text-xs text-[#27243A] mt-1 whitespace-pre-wrap leading-relaxed">
                 {ev.description}
               </p>
             </div>
@@ -120,8 +124,8 @@ export const Timeline: React.FC<TimelineProps> = ({ events, onAddUserNote }) => 
       </div>
 
       {/* Add User Note Box */}
-      <form onSubmit={handleAddNote} className="pt-3 border-t border-[#EAEDED] space-y-2">
-        <label className="block text-xs font-bold text-[#0F1111]">
+      <form onSubmit={handleAddNote} className="pt-3 border-t border-[#E4E1E8] space-y-2">
+        <label className="block text-xs font-bold text-[#27243A]">
           Add User Note or Incident Update
         </label>
         <div className="flex items-center gap-2">
@@ -130,18 +134,18 @@ export const Timeline: React.FC<TimelineProps> = ({ events, onAddUserNote }) => 
             placeholder="e.g. Technician called and confirmed fault code PWR-09..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="flex-1 h-9 px-3 border border-[#888C8C] rounded text-xs text-[#0F1111] focus:outline-none focus:border-[#007185] focus:ring-2 focus:ring-[#007185]/20"
+            className="flex-1 h-9 px-3 border border-[#E4E1E8] rounded-md text-xs text-[#27243A] bg-white focus:outline-none focus:border-[#5B4B8A] focus:ring-2 focus:ring-[#8B7BC4]/30"
           />
           <button
             type="submit"
             disabled={!note.trim() || submitting}
-            className="h-9 px-4 bg-white hover:bg-[#F3F3F3] text-[#0F1111] font-bold text-xs rounded border border-[#D5D9D9] shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 shrink-0"
+            className="h-9 px-4 bg-[#312E81] hover:bg-[#262366] text-white font-bold text-xs rounded-md shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#007185]" />
+            <Plus className="w-4 h-4 text-white" />
             <span>Add Note</span>
           </button>
         </div>
-        {error && <p className="text-xs text-[#B12704]">{error}</p>}
+        {error && <p className="text-xs text-[#B94A48]">{error}</p>}
       </form>
     </div>
   )

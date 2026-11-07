@@ -20,10 +20,10 @@ interface EvidenceManagerProps {
 
 const CATEGORY_LABELS: Record<EvidenceType, string> = {
   INVOICE: 'Purchase Invoice / Receipt',
-  WARRANTY: 'Warranty Document',
-  REPAIR_RECEIPT: 'Repair Receipt / Service Sheet',
-  SERVICE_COMMUNICATION: 'Service Communication / Email',
-  OTHER: 'Other Document',
+  WARRANTY: 'Warranty Certificate / Policy',
+  REPAIR_RECEIPT: 'Repair Job Sheet / Service Receipt',
+  SERVICE_COMMUNICATION: 'Service Email / Written Notice',
+  OTHER: 'Other Supporting Document',
 }
 
 export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
@@ -84,49 +84,49 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
   const percentComplete = total > 0 ? Math.round((represented.length / total) * 100) : 0
 
   return (
-    <div className="bg-white rounded-lg p-5 shadow-sm border border-[#D5D9D9] space-y-5">
+    <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E4E1E8] space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#EAEDED] gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E4E1E8] gap-2">
         <div>
-          <h2 className="text-base font-bold font-['Hanken_Grotesk'] text-[#0F1111] flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#007185]" />
+          <h2 className="text-base font-bold font-['Hanken_Grotesk'] text-[#27243A] flex items-center gap-2">
+            <FileText className="w-5 h-5 text-[#5B4B8A]" />
             <span>Evidence Repository & Document Checklist</span>
           </h2>
-          <p className="text-xs text-[#565959]">
-            Supported formats: PDF (text extraction), PNG, JPEG (attachments up to 10MB)
+          <p className="text-xs text-[#625F70]">
+            Supported formats: PDF (text extraction), PNG, JPEG (up to 10MB)
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#067D62] bg-[#F0F8F4] border border-[#9FD3BC] px-2.5 py-1 rounded">
+          <span className="text-xs font-bold text-[#3E7C68] bg-[#EAF3EF] border border-[#3E7C68]/30 px-2.5 py-1 rounded-full">
             {represented.length} of {total} Categories Represented ({percentComplete}%)
           </span>
         </div>
       </div>
 
-      {/* Statutory Checklist Grid */}
+      {/* Checklist Grid */}
       {checklist && (
         <div className="space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#565959] block">
-            Baseline Evidence Categories
+          <span className="text-xs font-bold uppercase tracking-wider text-[#625F70] block">
+            Baseline Evidence Coverage
           </span>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {represented.map((cat) => (
               <div
                 key={cat}
-                className="p-3 rounded border bg-[#F0F8F4] border-[#9FD3BC] flex items-start gap-3"
+                className="p-3 rounded-lg border bg-[#EAF3EF] border-[#3E7C68]/30 flex items-start gap-3"
               >
-                <CheckCircle2 className="w-5 h-5 text-[#067D62] shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-[#3E7C68] shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-bold text-[#067D62] truncate">
+                    <p className="text-xs font-bold text-[#3E7C68] truncate">
                       {CATEGORY_LABELS[cat] || cat}
                     </p>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded font-bold uppercase bg-white text-[#067D62]">
-                      Category represented — relevance not verified
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase bg-white text-[#3E7C68]">
+                      Attached
                     </span>
                   </div>
-                  <p className="text-xs text-[#565959] mt-0.5">
-                    Attached under category (authenticity and case correlation not verified)
+                  <p className="text-xs text-[#625F70] mt-0.5">
+                    Document present in case record
                   </p>
                 </div>
               </div>
@@ -135,20 +135,20 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
             {missing.map((cat) => (
               <div
                 key={cat}
-                className="p-3 rounded border bg-[#FCF4F2] border-[#F2BEB1] flex items-start gap-3"
+                className="p-3 rounded-lg border bg-[#F9ECEB] border-[#B94A48]/30 flex items-start gap-3"
               >
-                <Clock className="w-5 h-5 text-[#B12704] shrink-0 mt-0.5" />
+                <Clock className="w-5 h-5 text-[#B94A48] shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-bold text-[#B12704] truncate">
+                    <p className="text-xs font-bold text-[#B94A48] truncate">
                       {CATEGORY_LABELS[cat] || cat}
                     </p>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded font-bold uppercase bg-white text-[#B12704]">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase bg-white text-[#B94A48]">
                       Missing
                     </span>
                   </div>
-                  <p className="text-xs text-[#565959] mt-0.5">
-                    Add a document in this category
+                  <p className="text-xs text-[#625F70] mt-0.5">
+                    Recommended for dispute substantiation
                   </p>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
           </div>
 
           {checklist.explanation && (
-            <p className="text-[11px] text-[#565959] italic pt-1">
+            <p className="text-[11px] text-[#625F70] italic pt-1">
               Note: {checklist.explanation}
             </p>
           )}
@@ -169,17 +169,18 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
           variant="card"
           label="Extracting & Processing Document Evidence"
           sublabel={`Analyzing "${uploadingFileName || 'document'}" — extracting text, classifying its category, and updating evidence coverage...`}
+          tone="indigo"
         />
       )}
 
       {/* Upload Box */}
       <form
         onSubmit={handleUploadSubmit}
-        className="bg-[#F3F3F3] border border-dashed border-[#888C8C] rounded-lg p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
+        className="bg-[#F7F6F3] border border-dashed border-[#8B7BC4] rounded-xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
       >
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-          <label className={`h-9 px-3 bg-white border border-[#888C8C] hover:bg-[#F3F3F3] text-xs font-semibold text-[#0F1111] rounded flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <UploadCloud className="w-4 h-4 text-[#007185]" />
+          <label className={`h-9 px-3.5 bg-white border border-[#E4E1E8] hover:bg-[#F0EEFA] text-xs font-semibold text-[#27243A] rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0 transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <UploadCloud className="w-4 h-4 text-[#312E81]" />
             <span>{selectedFile ? 'Change File' : 'Choose Document'}</span>
             <input
               type="file"
@@ -191,22 +192,22 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
           </label>
 
           {selectedFile ? (
-            <span className="text-xs text-[#0F1111] font-semibold truncate max-w-xs">
+            <span className="text-xs text-[#27243A] font-semibold truncate max-w-xs">
               {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
             </span>
           ) : (
-            <span className="text-xs text-[#565959]">No file selected</span>
+            <span className="text-xs text-[#625F70]">No file selected</span>
           )}
 
           <select
             value={selectedDocType}
             onChange={(e) => setSelectedDocType(e.target.value as EvidenceType)}
             disabled={uploading}
-            className="h-9 px-2 bg-white border border-[#888C8C] rounded text-xs text-[#0F1111] focus:outline-none focus:border-[#007185] disabled:opacity-50"
+            className="h-9 px-2 bg-white border border-[#E4E1E8] rounded-lg text-xs text-[#27243A] focus:outline-none focus:border-[#5B4B8A] disabled:opacity-50"
           >
             <option value="INVOICE">Purchase Receipt / Invoice</option>
             <option value="REPAIR_RECEIPT">Repair Sheet / Service Job Report</option>
-            <option value="WARRANTY">Warranty Terms / Booklet</option>
+            <option value="WARRANTY">Warranty Certificate / Terms</option>
             <option value="SERVICE_COMMUNICATION">Service Communication / Email</option>
             <option value="OTHER">Other Documentation</option>
           </select>
@@ -215,10 +216,10 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
         <button
           type="submit"
           disabled={!selectedFile || uploading}
-          className="h-9 px-4 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-bold text-xs rounded border border-[#FCD200] shadow-sm flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shrink-0"
+          className="h-9 px-4 bg-[#312E81] hover:bg-[#262366] text-white font-bold text-xs rounded-lg shadow-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
         >
           {uploading ? (
-            <AIProcessingIndicator variant="inline" label="Extracting & Saving" tone="navy" />
+            <AIProcessingIndicator variant="inline" label="Processing" tone="indigo" />
           ) : (
             <span>Upload & Process</span>
           )}
@@ -226,7 +227,7 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
       </form>
 
       {uploadError && (
-        <div className="text-xs text-[#B12704] flex items-center gap-1">
+        <div className="text-xs text-[#B94A48] flex items-center gap-1 bg-[#F9ECEB] p-2.5 rounded-lg border border-[#B94A48]/30">
           <AlertTriangle className="w-3.5 h-3.5" />
           <span>{uploadError}</span>
         </div>
@@ -234,10 +235,10 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
 
       {/* Uploaded Files Table */}
       {evidenceList.length > 0 ? (
-        <div className="border border-[#D5D9D9] rounded-lg overflow-hidden">
+        <div className="border border-[#E4E1E8] rounded-xl overflow-hidden">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#F3F3F3] text-[#565959] border-b border-[#D5D9D9] font-bold">
+              <tr className="bg-[#F7F6F3] text-[#625F70] border-b border-[#E4E1E8] font-bold">
                 <th className="py-2.5 px-3">File Name</th>
                 <th className="py-2.5 px-3">Category</th>
                 <th className="py-2.5 px-3">Extraction Status</th>
@@ -245,43 +246,43 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
                 <th className="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EAEDED]">
+            <tbody className="divide-y divide-[#E4E1E8]">
               {evidenceList.map((doc) => (
-                <tr key={doc.id} className="hover:bg-[#F9F9F9] transition-colors">
-                  <td className="py-2.5 px-3 font-semibold text-[#0F1111] max-w-[200px] truncate">
+                <tr key={doc.id} className="hover:bg-[#F0EEFA]/40 transition-colors">
+                  <td className="py-2.5 px-3 font-semibold text-[#27243A] max-w-[200px] truncate">
                     <div className="flex items-center gap-1.5">
-                      <FileCheck className="w-4 h-4 text-[#007185] shrink-0" />
+                      <FileCheck className="w-4 h-4 text-[#3E7C68] shrink-0" />
                       <span className="truncate" title={doc.original_filename}>
                         {doc.original_filename}
                       </span>
                     </div>
                   </td>
-                  <td className="py-2.5 px-3 text-[#565959]">
-                    <span className="bg-[#EAEDED] px-1.5 py-0.5 rounded text-[11px] font-semibold text-[#0F1111]">
+                  <td className="py-2.5 px-3 text-[#625F70]">
+                    <span className="bg-[#F0EEFA] px-2 py-0.5 rounded-full text-[11px] font-semibold text-[#312E81]">
                       {CATEGORY_LABELS[doc.evidence_type] || doc.evidence_type}
                     </span>
                   </td>
                   <td className="py-2.5 px-3">
                     <span
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         doc.extraction_status === 'COMPLETED'
-                          ? 'bg-[#F0F8F4] text-[#067D62]'
+                          ? 'bg-[#EAF3EF] text-[#3E7C68]'
                           : doc.extraction_status === 'UNSUPPORTED' || doc.extraction_status === 'NO_TEXT_FOUND'
-                          ? 'bg-[#F3F3F3] text-[#565959]'
-                          : 'bg-[#FCF4F2] text-[#B12704]'
+                          ? 'bg-[#F7F6F3] text-[#625F70]'
+                          : 'bg-[#F9ECEB] text-[#B94A48]'
                       }`}
                     >
                       {doc.extraction_status}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-[#565959]">
+                  <td className="py-2.5 px-3 text-[#625F70]">
                     {new Date(doc.created_at).toLocaleDateString()}
                   </td>
                   <td className="py-2.5 px-3 text-right">
                     <button
                       onClick={() => handleDeleteClick(doc.id)}
                       disabled={deletingId === doc.id || uploading}
-                      className="p-1 text-[#75777C] hover:text-[#B12704] rounded transition-colors disabled:opacity-50"
+                      className="p-1 text-[#8E8B99] hover:text-[#B94A48] rounded transition-colors disabled:opacity-50 cursor-pointer"
                       title="Delete evidence document"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -293,8 +294,8 @@ export const EvidenceManager: React.FC<EvidenceManagerProps> = ({
           </table>
         </div>
       ) : (
-        <div className="text-center py-6 text-xs text-[#565959]">
-          No evidence uploaded yet. Add purchase invoices or repair sheets to help organize the case record.
+        <div className="text-center py-6 text-xs text-[#625F70]">
+          No evidence uploaded yet. Add purchase invoices or repair job sheets to substantiate the dispute.
         </div>
       )}
     </div>

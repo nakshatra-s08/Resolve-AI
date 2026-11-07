@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   FileQuestion,
   BookOpen,
-  ArrowRight,
   Bot,
   User,
   AlertTriangle,
@@ -18,19 +17,19 @@ const policyProvenanceLabel = (sourceType: string) => {
     case 'OFFICIAL':
       return 'Official source'
     case 'ILLUSTRATIVE':
-      return 'Illustrative demo · not official policy'
+      return 'Illustrative standard'
     case 'GUIDANCE':
       return 'General guidance'
     default:
-      return 'Source type unverified'
+      return 'Source unverified'
   }
 }
 
 interface AssistantPanelProps {
   caseId: string
   analysis: CaseAnalysisResponse | null
-  onRunAnalysis: () => Promise<void>
-  onSendMessage: (msg: string) => Promise<{ answer: string; supporting_policy_sources?: PolicySearchResultItem[] }>
+  onRunAnalysis?: () => Promise<void>
+  onSendMessage?: (msg: string) => Promise<{ answer: string; supporting_policy_sources?: PolicySearchResultItem[] }>
   onPrepareAction: (
     title: string,
     description: string,
@@ -57,7 +56,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       sender: 'assistant',
-      text: "I've reviewed the case context. Run an analysis or ask about the uploaded records, warranty terms, and possible next steps.",
+      text: "I've reviewed the case context. Run an analysis or ask about the uploaded records, warranty terms, and consumer rights next steps.",
       time: 'Just now',
     },
   ])
@@ -71,7 +70,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (!input.trim() || loading) return
+    if (!input.trim() || loading || !onSendMessage) return
 
     const userText = input.trim()
     setInput('')
@@ -106,103 +105,105 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   }
 
   const handleRunAnalysisClick = async () => {
-    if (analyzing) return
+    if (!onRunAnalysis || analyzing) return
     setAnalyzing(true)
     setAnalysisError(null)
     try {
       await onRunAnalysis()
     } catch (err: any) {
-      setAnalysisError(err.message || 'Failed to complete case analysis.')
+      setAnalysisError(err.message || 'Failed to generate case analysis.')
     } finally {
       setAnalyzing(false)
     }
   }
 
-  const handleDraftActionClick = async () => {
-    if (!analysis || draftingAction) return
+  const handleCreateSuggestedAction = async () => {
+    if (!analysis || !analysis.recommended_next_step || draftingAction) return
     setDraftingAction(true)
-    setActionErrorMessage(null)
     setActionSuccessMessage(null)
+    setActionErrorMessage(null)
 
     try {
-      const rawTitle = analysis.recommended_next_step.trim()
-      const title = rawTitle.length > 250 ? `${rawTitle.slice(0, 247)}...` : rawTitle
+      const isFollowUp =
+        analysis.recommended_next_step.toLowerCase().includes('follow') ||
+        analysis.recommended_next_step.toLowerCase().includes('check-in') ||
+        analysis.recommended_next_step.toLowerCase().includes('schedule')
 
-      const rawSubject = `Case follow-up: ${rawTitle}`
-      const subject = rawSubject.length > 250 ? `${rawSubject.slice(0, 247)}...` : rawSubject
+      const actionType: ActionType = isFollowUp ? 'SCHEDULE_FOLLOW_UP' : 'SEND_MESSAGE'
 
-      const description = analysis.reasoning
-        ? `${analysis.summary}\n\nReasoning: ${analysis.reasoning}`
-        : analysis.summary
+      const title = `Proposed: ${analysis.recommended_next_step.slice(0, 80)}`
+      const description = `Automated recommendation: ${analysis.summary}`
 
-      const messageParts = [
-        analysis.summary,
-        analysis.reasoning ? `Justification: ${analysis.reasoning}` : '',
-        analysis.suggested_action ? `Proposed Action: ${analysis.suggested_action}` : '',
-      ].filter(Boolean)
-
-      const payload = {
-        recipient: 'Official Service Provider',
-        subject,
-        message_body: messageParts.join('\n\n') || analysis.summary,
-        is_simulated: true,
+      let payload: Record<string, any> = {}
+      if (actionType === 'SCHEDULE_FOLLOW_UP') {
+        const targetDate = new Date()
+        targetDate.setDate(targetDate.getDate() + 3)
+        payload = {
+          due_at: targetDate.toISOString(),
+          purpose: `Follow-up regarding: ${analysis.recommended_next_step}`,
+        }
+      } else {
+        payload = {
+          recipient: 'Authorized Service Center Support / NCH',
+          message_body: `Dear Support,\n\nRegarding my product repair claim:\n${analysis.summary}\n\nProposed Next Step: ${analysis.recommended_next_step}\n\nPlease advise promptly.`,
+          is_simulated: true,
+        }
       }
 
-      await onPrepareAction(title, description, 'SEND_MESSAGE', payload)
-      setActionSuccessMessage('Action successfully drafted and added to Agent Actions for approval.')
+      await onPrepareAction(title, description, actionType, payload)
+      setActionSuccessMessage(
+        'Action proposed successfully! It is in PENDING_APPROVAL status and requires your explicit approval before execution.'
+      )
     } catch (err: any) {
-      setActionErrorMessage(err.message || 'Failed to draft action from recommendation.')
+      setActionErrorMessage(err.message || 'Failed to prepare suggested action.')
     } finally {
       setDraftingAction(false)
     }
   }
 
   return (
-    <div className="bg-white rounded-lg border border-[#D5D9D9] shadow-sm flex flex-col h-full min-h-[640px] overflow-hidden">
-      {/* Top Header Bar */}
-      <div className="bg-[#232F3E] text-white p-3.5 flex items-center justify-between shrink-0">
+    <div className="bg-white rounded-xl shadow-xs border border-[#E4E1E8] flex flex-col h-[750px] overflow-hidden">
+      {/* Deep Indigo Header */}
+      <div className="bg-[#312E81] text-white p-4 flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#FFD814] flex items-center justify-center text-[#131921] font-bold shadow-sm">
-            <Bot className="w-5 h-5 text-[#131921]" />
+          <div className="w-8 h-8 rounded-lg bg-[#D97757] flex items-center justify-center text-white shadow-xs">
+            <Bot className="w-4 h-4 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold font-['Hanken_Grotesk'] text-white">
-                ResolveAI Assistant
-              </span>
-              <span className="bg-[#FFD814]/20 text-[#FFE16B] border border-[#FFE16B]/40 px-1.5 py-0.2 rounded text-[10px] font-bold uppercase">
-                {analysis?.engine_mode ? `${analysis.engine_mode} mode` : 'Demo Mode'}
-              </span>
-            </div>
-            <span className="text-[11px] text-[#8A97A9]">
-              Policy & Repair Reasoning Engine
-            </span>
+            <h3 className="font-bold text-sm tracking-tight font-['Hanken_Grotesk'] text-white">
+              ResolveAI Intelligence
+            </h3>
+            <p className="text-[11px] text-[#F0EEFA]">
+              Grounded Consumer Guidance & Evidence Synthesis
+            </p>
           </div>
         </div>
 
-        <button
-          onClick={handleRunAnalysisClick}
-          disabled={analyzing}
-          className="h-7 px-2.5 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-bold text-[11px] rounded border border-[#FCD200] shadow-sm flex items-center gap-1 transition-colors disabled:opacity-50"
-        >
-          {analyzing ? (
-            <AIProcessingIndicator variant="inline" label="Analyzing" tone="yellow" />
-          ) : (
-            <>
-              <Sparkles className="w-3.5 h-3.5 text-[#0F1111]" />
-              <span>Run Case Analysis</span>
-            </>
-          )}
-        </button>
+        {onRunAnalysis && (
+          <button
+            onClick={handleRunAnalysisClick}
+            disabled={analyzing}
+            className="h-8 px-3 bg-[#D97757] hover:bg-[#B85F44] text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            {analyzing ? (
+              <AIProcessingIndicator variant="inline" label="Analyzing" tone="coral" />
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+                <span>Run Analysis</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Latency & Mode Ribbon */}
-      <div className="bg-[#F3F3F3] px-3.5 py-1.5 border-b border-[#D5D9D9] flex items-center justify-between text-[11px] text-[#565959] shrink-0">
+      <div className="bg-[#F0EEFA] px-4 py-1.5 border-b border-[#E4E1E8] flex items-center justify-between text-[11px] text-[#625F70] shrink-0">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-[#067D62]" />
-          <span>Case analysis and policy references</span>
+          <span className="h-2 w-2 rounded-full bg-[#3E7C68]" />
+          <span>Case facts & statutory references</span>
         </span>
-        <span>Local Persistent SQLite</span>
+        <span className="font-medium text-[#312E81]">Local Persistent Engine</span>
       </div>
 
       {/* Scrollable Main Stream */}
@@ -212,13 +213,14 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           <AIProcessingIndicator
             variant="card"
             label="Analyzing Case Context & Warranty Policies"
-            sublabel="Reviewing the reported issue, evidence coverage, and available policy references..."
+            sublabel="Reviewing reported issues, evidence coverage, and statutory escalation thresholds..."
+            tone="indigo"
           />
         )}
 
         {/* Analysis Error Alert */}
         {analysisError && !analyzing && (
-          <div className="p-3 bg-[#FCF4F2] border border-[#F2BEB1] rounded text-xs text-[#B12704] flex items-center justify-between gap-2">
+          <div className="p-3 bg-[#F9ECEB] border border-[#B94A48]/30 rounded-lg text-xs text-[#B94A48] flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{analysisError}</span>
@@ -226,7 +228,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
             <button
               type="button"
               onClick={() => setAnalysisError(null)}
-              className="text-[#565959] hover:text-[#B12704] text-xs font-bold px-1"
+              className="text-[#625F70] hover:text-[#B94A48] text-xs font-bold px-1 cursor-pointer"
             >
               ×
             </button>
@@ -235,150 +237,108 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
 
         {/* Structured Analysis Recommendation Card */}
         {analysis && (
-          <div className="bg-[#F9F9F9] border border-[#007185]/40 rounded-lg p-3.5 space-y-3 shadow-xs">
-            <div className="flex items-center justify-between pb-1.5 border-b border-[#D5D9D9]">
-              <span className="flex items-center gap-1.5 text-[#007185] font-bold text-xs">
-                <CheckCircle2 className="w-4 h-4 text-[#007185]" />
+          <div className="bg-[#F7F6F3] border border-[#8B7BC4]/30 rounded-xl p-4 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#E4E1E8]">
+              <span className="flex items-center gap-1.5 text-[#312E81] font-bold text-xs">
+                <CheckCircle2 className="w-4 h-4 text-[#3E7C68]" />
                 <span>Case Analysis · Suggested Next Step</span>
               </span>
-              <span className="text-[10px] bg-[#FFD814]/30 text-[#0F1111] px-1.5 py-0.5 rounded font-bold">
+              <span className="text-[10px] bg-[#F0EEFA] text-[#312E81] px-2 py-0.5 rounded-full font-bold">
                 {analysis.engine_mode} reasoning
               </span>
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-[#0F1111] font-['Hanken_Grotesk']">
+              <h4 className="text-sm font-bold text-[#27243A] font-['Hanken_Grotesk']">
                 {analysis.recommended_next_step}
               </h4>
-              <p className="text-xs text-[#565959] mt-1 leading-relaxed">
+              <p className="text-xs text-[#625F70] mt-1 leading-relaxed">
                 {analysis.summary}
               </p>
               {analysis.reasoning && (
-                <p className="text-xs text-[#0F1111] mt-1.5 leading-relaxed bg-white p-2 rounded border border-[#EAEDED]">
+                <p className="text-xs text-[#27243A] mt-1.5 leading-relaxed bg-white p-2.5 rounded-lg border border-[#E4E1E8]">
                   <strong>Reasoning:</strong> {analysis.reasoning}
                 </p>
               )}
             </div>
 
-            {/* Known Facts & Missing Info */}
-            <div className="space-y-2 bg-white p-2.5 rounded border border-[#D5D9D9]">
-              {analysis.known_facts.length > 0 && (
-                <div>
-                  <span className="text-[11px] font-bold text-[#067D62] flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Case Facts &amp; Evidence Notes:</span>
-                  </span>
-                  <ul className="list-disc list-inside text-[11px] text-[#0F1111] pl-1 space-y-0.5 mt-0.5">
-                    {analysis.known_facts.map((factItem, i) => (
-                      <li key={i}>
-                        <span className="font-semibold">{factItem.category}:</span> {factItem.fact}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {analysis.missing_information.length > 0 && (
-                <div>
-                  <span className="text-[11px] font-bold text-[#B12704] flex items-center gap-1">
-                    <FileQuestion className="w-3.5 h-3.5" />
-                    <span>Missing Information to Address:</span>
-                  </span>
-                  <ul className="list-disc list-inside text-[11px] text-[#B12704] pl-1 space-y-0.5 mt-0.5">
-                    {analysis.missing_information.map((item, i) => (
-                      <li key={i}>
-                        <span className="font-semibold">{item.item}:</span> {item.impact}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Policy and reference sources */}
-            {analysis.supporting_policy_sources.length > 0 && (
-              <div className="bg-white p-2.5 rounded border border-[#D5D9D9] space-y-1">
-                <span className="text-[11px] font-bold text-[#0F1111] flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5 text-[#007185]" />
-                  <span>Policy &amp; Reference Sources:</span>
+            {/* Checklist summary */}
+            {analysis.missing_information && analysis.missing_information.length > 0 && (
+              <div className="p-2.5 bg-[#FBF4E8] rounded-lg border border-[#E7B76A]/40 space-y-1">
+                <span className="font-bold text-[#A06C18] flex items-center gap-1 text-[11px]">
+                  <FileQuestion className="w-3.5 h-3.5" />
+                  <span>Missing Evidence Checklist Items:</span>
                 </span>
-                {analysis.supporting_policy_sources.map((c) => (
-                  <div key={c.source_id} className="text-[11px] border-l-2 border-[#007185] pl-2 py-0.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <strong className="text-[#0F1111]">{c.source_title}</strong>
-                      <span className="rounded bg-[#F3F3F3] px-1.5 py-0.5 text-[9px] font-semibold text-[#565959]">
-                        {policyProvenanceLabel(c.source_type)}
-                      </span>
-                      {c.jurisdiction && <span>({c.jurisdiction})</span>}
-                    </div>
-                    <p className="text-[#565959] text-[10px] mt-0.5 italic">
-                      "{c.passage}"
-                    </p>
-                  </div>
-                ))}
+                <ul className="list-disc list-inside space-y-0.5 text-[#625F70] text-[11px]">
+                  {analysis.missing_information.map((info, i) => (
+                    <li key={i}>{info.item}</li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            {/* Action Trigger Buttons */}
-            <div className="pt-1 flex flex-col sm:flex-row items-center gap-2">
+            {/* Citations */}
+            {analysis.supporting_policy_sources && analysis.supporting_policy_sources.length > 0 && (
+              <div className="space-y-1 pt-1 border-t border-[#E4E1E8]">
+                <span className="text-[11px] font-bold text-[#625F70] flex items-center gap-1">
+                  <BookOpen className="w-3 h-3 text-[#312E81]" />
+                  <span>Grounded Policy References:</span>
+                </span>
+                <div className="space-y-1">
+                  {analysis.supporting_policy_sources.map((cite) => (
+                    <div
+                      key={cite.source_id}
+                      className="p-2 bg-white rounded border border-[#E4E1E8] text-[11px]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <strong className="text-[#312E81]">{cite.source_title}</strong>
+                        <span className="text-[10px] text-[#625F70]">
+                          {policyProvenanceLabel(cite.source_type)}
+                        </span>
+                      </div>
+                      <p className="text-[#625F70] mt-0.5 italic">"{cite.passage}"</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Feedback Messages */}
+            {actionSuccessMessage && (
+              <div className="p-2.5 bg-[#EAF3EF] border border-[#3E7C68]/30 rounded-lg text-xs text-[#3E7C68] font-semibold">
+                {actionSuccessMessage}
+              </div>
+            )}
+            {actionErrorMessage && (
+              <div className="p-2.5 bg-[#F9ECEB] border border-[#B94A48]/30 rounded-lg text-xs text-[#B94A48]">
+                {actionErrorMessage}
+              </div>
+            )}
+
+            {/* Propose Action Button */}
+            <div className="pt-2 flex flex-wrap gap-2">
               <button
-                type="button"
-                onClick={handleDraftActionClick}
-                disabled={draftingAction || analyzing}
-                className="w-full sm:flex-1 h-8 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-bold text-xs rounded border border-[#FCD200] shadow-sm flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleCreateSuggestedAction}
+                disabled={draftingAction}
+                className="px-3.5 py-1.5 bg-[#312E81] hover:bg-[#262366] text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {draftingAction ? (
-                  <AIProcessingIndicator variant="inline" label="Drafting Action" tone="yellow" />
+                  <AIProcessingIndicator variant="inline" label="Drafting" tone="indigo" />
                 ) : (
                   <>
+                    <Send className="w-3.5 h-3.5" />
                     <span>Draft Action from Recommendation</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
 
               <button
-                type="button"
                 onClick={onOpenSimulateModal}
-                disabled={draftingAction || analyzing}
-                className="w-full sm:w-auto h-8 px-3 bg-white hover:bg-[#F3F3F3] text-[#007185] font-semibold text-xs rounded border border-[#D5D9D9] shadow-xs flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 bg-white border border-[#E4E1E8] hover:bg-[#F0EEFA] text-[#27243A] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
               >
-                <span>Simulate Response</span>
+                Simulate Inbound Reply
               </button>
             </div>
-
-            {/* Inline Action Feedback Alerts */}
-            {actionSuccessMessage && (
-              <div className="p-2.5 bg-[#F0F8F5] border border-[#067D62]/40 rounded text-xs text-[#067D62] flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-[#067D62]" />
-                  <span>{actionSuccessMessage}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActionSuccessMessage(null)}
-                  className="text-[#565959] hover:text-[#0F1111] text-xs font-bold px-1"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-            {actionErrorMessage && (
-              <div className="p-2.5 bg-[#FCF4F2] border border-[#F2BEB1] rounded text-xs text-[#B12704] flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-[#B12704]" />
-                  <span>{actionErrorMessage}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActionErrorMessage(null)}
-                  className="text-[#565959] hover:text-[#B12704] text-xs font-bold px-1"
-                >
-                  ×
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -389,35 +349,35 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
             className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[88%] p-3 rounded-lg text-xs leading-relaxed ${
+              className={`max-w-[85%] rounded-xl p-3 space-y-1.5 text-xs ${
                 m.sender === 'user'
-                  ? 'bg-[#F3F3F3] text-[#0F1111] rounded-tr-none border border-[#D5D9D9]'
-                  : 'bg-white text-[#0F1111] rounded-tl-none border border-[#D5D9D9] shadow-xs'
+                  ? 'bg-[#312E81] text-white rounded-tr-none'
+                  : 'bg-[#F7F6F3] text-[#27243A] border border-[#E4E1E8] rounded-tl-none'
               }`}
             >
-              <div className="flex items-center gap-1.5 mb-1 text-[10px] text-[#565959]">
+              <div className="flex items-center gap-1.5 text-[10px] opacity-75 border-b border-black/5 pb-1">
                 {m.sender === 'user' ? (
                   <>
-                    <User className="w-3 h-3 text-[#565959]" />
+                    <User className="w-3 h-3 text-white" />
                     <span className="font-semibold">Consumer</span>
                   </>
                 ) : (
                   <>
-                    <Bot className="w-3 h-3 text-[#007185]" />
-                    <span className="font-semibold text-[#007185]">ResolveAI Assistant</span>
+                    <Bot className="w-3 h-3 text-[#312E81]" />
+                    <span className="font-semibold text-[#312E81]">ResolveAI</span>
                   </>
                 )}
                 <span className="ml-auto">{m.time}</span>
               </div>
-              <p className="whitespace-pre-wrap">{m.text}</p>
+              <p className="whitespace-pre-wrap leading-relaxed">{m.text}</p>
 
               {m.citations && m.citations.length > 0 && (
-                <div className="mt-2 pt-1.5 border-t border-[#EAEDED] space-y-1">
-                  <span className="text-[10px] font-bold text-[#565959] uppercase">
+                <div className="mt-2 pt-1.5 border-t border-[#E4E1E8] space-y-1">
+                  <span className="text-[10px] font-bold text-[#625F70] uppercase tracking-wider">
                     Cited References:
                   </span>
                   {m.citations.map((c) => (
-                    <div key={c.source_id} className="text-[10px] text-[#007185] italic">
+                    <div key={c.source_id} className="text-[10px] text-[#312E81] italic">
                       <span>• {c.source_title} — {policyProvenanceLabel(c.source_type)}</span>
                     </div>
                   ))}
@@ -432,18 +392,19 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           <AIProcessingIndicator
             variant="message"
             label="Reviewing policy references and case evidence"
-            sublabel="Examining case events, repair history, and available guidance..."
+            sublabel="Examining case events, repair history, and statutory guidance..."
+            tone="indigo"
           />
         )}
       </div>
 
       {/* Suggested Quick Prompts */}
-      <div className="px-3.5 py-1.5 bg-[#F3F3F3] border-t border-[#D5D9D9] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+      <div className="px-3.5 py-1.5 bg-[#F0EEFA] border-t border-[#E4E1E8] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
         <button
           onClick={() => {
             setInput('What are my escalation options after 2 failed repairs?')
           }}
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-[#D5D9D9] text-[11px] text-[#0F1111] hover:bg-[#E8E8E7] transition-colors"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-[#E4E1E8] text-[11px] text-[#27243A] hover:bg-[#E4E0F5] transition-colors cursor-pointer"
         >
           2 failed repairs options?
         </button>
@@ -451,7 +412,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           onClick={() => {
             setInput('Can I request a replacement under manufacturer warranty?')
           }}
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-[#D5D9D9] text-[11px] text-[#0F1111] hover:bg-[#E8E8E7] transition-colors"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-[#E4E1E8] text-[11px] text-[#27243A] hover:bg-[#E4E0F5] transition-colors cursor-pointer"
         >
           Warranty replacement?
         </button>
@@ -459,7 +420,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           onClick={() => {
             setInput('What evidence is recommended for National Consumer Helpline escalation?')
           }}
-          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-[#D5D9D9] text-[11px] text-[#0F1111] hover:bg-[#E8E8E7] transition-colors"
+          className="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-[#E4E1E8] text-[11px] text-[#27243A] hover:bg-[#E4E0F5] transition-colors cursor-pointer"
         >
           NCH grievance evidence?
         </button>
@@ -468,7 +429,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
       {/* Input Box */}
       <form
         onSubmit={handleSend}
-        className="p-3 bg-white border-t border-[#D5D9D9] flex items-center gap-2 shrink-0"
+        className="p-3 bg-white border-t border-[#E4E1E8] flex items-center gap-2 shrink-0"
       >
         <input
           type="text"
@@ -476,15 +437,15 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
-          className="flex-1 h-9 px-3 border border-[#888C8C] rounded text-xs text-[#0F1111] focus:outline-none focus:border-[#007185] focus:ring-2 focus:ring-[#007185]/20 disabled:opacity-50"
+          className="flex-1 h-9 px-3 border border-[#E4E1E8] rounded-md text-xs text-[#27243A] focus:outline-none focus:border-[#5B4B8A] focus:ring-2 focus:ring-[#8B7BC4]/30 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="h-9 px-3 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] rounded border border-[#FCD200] shadow-sm flex items-center justify-center transition-colors disabled:opacity-50"
+          className="h-9 px-3.5 bg-[#312E81] hover:bg-[#262366] text-white rounded-md shadow-xs flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer"
           title="Send query"
         >
-          <Send className="w-4 h-4 text-[#0F1111]" />
+          <Send className="w-4 h-4 text-white" />
         </button>
       </form>
     </div>

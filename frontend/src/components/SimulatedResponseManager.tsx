@@ -65,22 +65,22 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
   }
 
   return (
-    <div className="bg-white rounded-lg p-5 shadow-sm border border-[#D5D9D9] space-y-4">
+    <div className="bg-white rounded-xl p-5 shadow-xs border border-[#E4E1E8] space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#EAEDED] gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E4E1E8] gap-2">
         <div>
-          <h2 className="text-base font-bold font-['Hanken_Grotesk'] text-[#0F1111] flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-[#007185]" />
+          <h2 className="text-base font-bold font-['Hanken_Grotesk'] text-[#27243A] flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-[#5B4B8A]" />
             <span>Simulated Provider Responses & Inbound Intake</span>
           </h2>
-          <p className="text-xs text-[#565959]">
-            Simulate incoming service centre or manufacturer replies and trigger AI reasoning.
+          <p className="text-xs text-[#625F70]">
+            Simulate incoming service center replies and trigger automated evidence reassessment.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-[#FCF4F2] border border-[#F2BEB1] rounded p-2.5 text-xs text-[#B12704] flex items-center gap-2">
+        <div className="bg-[#F9ECEB] border border-[#B94A48]/30 rounded-lg p-2.5 text-xs text-[#B94A48] flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -88,31 +88,31 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
 
       {/* Processed Outcome Callout */}
       {lastResult && (
-        <div className="bg-[#F0F8F4] border border-[#9FD3BC] rounded-lg p-4 space-y-2 text-xs">
+        <div className="bg-[#EAF3EF] border border-[#3E7C68]/30 rounded-xl p-4 space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-[#067D62] flex items-center gap-1.5 text-sm">
+            <span className="font-bold text-[#3E7C68] flex items-center gap-1.5 text-sm">
               <CheckCircle className="w-4 h-4" />
               <span>Response Successfully Processed by ResolveAI</span>
             </span>
             {lastResult.suggested_case_status && (
-              <span className="bg-white text-[#067D62] border border-[#9FD3BC] px-2 py-0.5 rounded text-[11px] font-bold">
-                Status Updated to: {lastResult.suggested_case_status}
+              <span className="bg-white text-[#3E7C68] border border-[#3E7C68]/30 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                Status: {lastResult.suggested_case_status}
               </span>
             )}
           </div>
 
-          <p className="text-[#0F1111] font-semibold">
+          <p className="text-[#27243A] font-semibold">
             Next Recommendation: {lastResult.recommended_next_step}
           </p>
 
-          <p className="text-[#565959] leading-relaxed">
+          <p className="text-[#625F70] leading-relaxed">
             {lastResult.summary}
           </p>
 
           {lastResult.identified_commitments.length > 0 && (
             <div className="space-y-1">
-              <span className="text-[#067D62] font-bold text-[11px]">Provider Commitments:</span>
-              <ul className="list-disc list-inside text-[#0F1111] pl-1">
+              <span className="text-[#3E7C68] font-bold text-[11px]">Provider Commitments:</span>
+              <ul className="list-disc list-inside text-[#27243A] pl-1">
                 {lastResult.identified_commitments.map((c, i) => (
                   <li key={i}>{c}</li>
                 ))}
@@ -122,8 +122,8 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
 
           {lastResult.requested_information.length > 0 && (
             <div className="space-y-1">
-              <span className="text-[#565959] font-bold text-[11px]">Requested Information:</span>
-              <ul className="list-disc list-inside text-[#0F1111] pl-1">
+              <span className="text-[#625F70] font-bold text-[11px]">Requested Information:</span>
+              <ul className="list-disc list-inside text-[#27243A] pl-1">
                 {lastResult.requested_information.map((r, i) => (
                   <li key={i}>{r}</li>
                 ))}
@@ -132,7 +132,7 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
           )}
 
           {lastResult.evidence_still_needed.length > 0 && (
-            <div className="text-[#B12704]">
+            <div className="text-[#B94A48]">
               <span className="font-bold text-[11px]">Evidence Still Needed:</span>
               <ul className="list-disc list-inside pl-1">
                 {lastResult.evidence_still_needed.map((e, i) => (
@@ -147,31 +147,31 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
       {/* Simulator Form */}
       <form
         onSubmit={handleSimulateSubmit}
-        className="bg-[#F3F3F3] p-4 rounded-lg border border-[#D5D9D9] space-y-3 text-xs"
+        className="bg-[#F7F6F3] p-4 rounded-xl border border-[#E4E1E8] space-y-3 text-xs"
       >
-        <span className="font-bold text-[#0F1111] uppercase tracking-wider block">
+        <span className="font-bold text-[#27243A] uppercase tracking-wider block text-[11px]">
           Inject Simulated Inbound Provider Response
         </span>
 
         <div className="space-y-3">
           <div>
-            <label className="block font-bold text-[#0F1111] mb-1">Provider Name</label>
+            <label className="block font-bold text-[#27243A] mb-1">Provider Name</label>
             <input
               type="text"
               value={providerName}
               onChange={(e) => setProviderName(e.target.value)}
-              className="w-full h-8 px-2.5 bg-white border border-[#888C8C] rounded text-xs text-[#0F1111]"
+              className="w-full h-8 px-2.5 bg-white border border-[#E4E1E8] rounded-md text-xs text-[#27243A] focus:outline-none focus:border-[#5B4B8A]"
             />
           </div>
 
           <div>
-            <label className="block font-bold text-[#0F1111] mb-1">Inbound Message Body</label>
+            <label className="block font-bold text-[#27243A] mb-1">Inbound Message Body</label>
             <textarea
               rows={3}
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
               disabled={simulating || processingId !== null}
-              className="w-full p-2.5 bg-white border border-[#888C8C] rounded text-xs text-[#0F1111] disabled:opacity-50"
+              className="w-full p-2.5 bg-white border border-[#E4E1E8] rounded-md text-xs text-[#27243A] focus:outline-none focus:border-[#5B4B8A] disabled:opacity-50"
             />
           </div>
         </div>
@@ -180,10 +180,10 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
           <button
             type="submit"
             disabled={simulating || processingId !== null}
-            className="h-8 px-4 bg-[#FFD814] hover:bg-[#F7CA00] text-[#0F1111] font-bold text-xs rounded border border-[#FCD200] shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="h-8 px-4 bg-[#312E81] hover:bg-[#262366] text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {simulating ? (
-              <AIProcessingIndicator variant="inline" label="Injecting Reply" tone="yellow" />
+              <AIProcessingIndicator variant="inline" label="Injecting" tone="indigo" />
             ) : (
               <>
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -200,12 +200,13 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
           variant="card"
           label="Processing Inbound Provider Response"
           sublabel="Extracting provider commitments, analyzing requested documents, and triggering orchestrator workflow reassessment..."
+          tone="indigo"
         />
       )}
 
       {/* Past Inbound Responses */}
       <div className="space-y-2.5">
-        <span className="text-xs font-bold uppercase tracking-wider text-[#565959] block">
+        <span className="text-xs font-bold uppercase tracking-wider text-[#625F70] block">
           Inbound Response Inbox ({responses.length})
         </span>
 
@@ -217,43 +218,43 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
               return (
                 <div
                   key={resp.id}
-                  className="p-3.5 rounded border border-[#D5D9D9] bg-white space-y-2 text-xs"
+                  className="p-3.5 rounded-xl border border-[#E4E1E8] bg-white space-y-2 text-xs"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <div className="flex items-center gap-2">
-                      <strong className="text-[#0F1111]">{resp.provider_name}</strong>
-                      <span className="text-[10px] bg-[#EAEDED] px-1.5 py-0.2 rounded font-bold text-[#565959]">
+                      <strong className="text-[#27243A]">{resp.provider_name}</strong>
+                      <span className="text-[10px] bg-[#F7F6F3] px-2 py-0.5 rounded-full font-bold text-[#625F70]">
                         {resp.source_type}
                       </span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                           resp.status === 'PROCESSED'
-                            ? 'bg-[#F0F8F4] text-[#067D62]'
-                            : 'bg-[#FFF8E7] text-[#C45500]'
+                            ? 'bg-[#EAF3EF] text-[#3E7C68]'
+                            : 'bg-[#FBF4E8] text-[#A06C18]'
                         }`}
                       >
                         {resp.status}
                       </span>
                     </div>
 
-                    <span className="text-[11px] text-[#565959]">
+                    <span className="text-[11px] text-[#8E8B99]">
                       {new Date(resp.created_at).toLocaleString()}
                     </span>
                   </div>
 
-                  <p className="text-[#0F1111] whitespace-pre-wrap bg-[#F9F9F9] p-2.5 rounded border border-[#EAEDED] leading-relaxed">
+                  <p className="text-[#27243A] whitespace-pre-wrap bg-[#F7F6F3] p-2.5 rounded-lg border border-[#E4E1E8] leading-relaxed">
                     {resp.response_text}
                   </p>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-[#565959]">
+                    <span className="text-[11px] text-[#625F70]">
                       {resp.status === 'PROCESSED' ? (
-                        <span className="text-[#067D62] font-semibold flex items-center gap-1">
+                        <span className="text-[#3E7C68] font-semibold flex items-center gap-1">
                           <CheckCircle className="w-3.5 h-3.5" />
                           <span>Processed into Case Context</span>
                         </span>
                       ) : (
-                        <span className="text-[#C45500] font-semibold">
+                        <span className="text-[#A06C18] font-semibold">
                           Unprocessed — Requires AI analysis
                         </span>
                       )}
@@ -263,10 +264,10 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
                       <button
                         onClick={() => handleProcessClick(resp.id)}
                         disabled={isProcessing || processingId !== null}
-                        className="h-7 px-3 bg-[#FF9900] hover:bg-[#E68A00] text-[#0F1111] font-bold text-xs rounded border border-[#E68A00] shadow-xs flex items-center gap-1 transition-colors disabled:opacity-50"
+                        className="h-7 px-3.5 bg-[#D97757] hover:bg-[#B85F44] text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1 transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         {isProcessing ? (
-                          <AIProcessingIndicator variant="inline" label="Processing" tone="yellow" />
+                          <AIProcessingIndicator variant="inline" label="Processing" tone="coral" />
                         ) : (
                           <span>Process Response</span>
                         )}
@@ -278,7 +279,7 @@ export const SimulatedResponseManager: React.FC<SimulatedResponseManagerProps> =
             })}
           </div>
         ) : (
-          <div className="text-center py-5 text-xs text-[#565959]">
+          <div className="text-center py-5 text-xs text-[#625F70]">
             No inbound provider responses yet. Use the simulator above to inject one.
           </div>
         )}

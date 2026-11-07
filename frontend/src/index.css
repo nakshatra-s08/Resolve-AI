@@ -1,35 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --color-nav-deep: #131921;
-  --color-nav-container: #232f3e;
-  --color-nav-hover: #37475A;
-  --color-surface-canvas: #EAEDED;
-  --color-surface-subtle: #F3F3F3;
+  --color-primary-indigo: #312E81;
+  --color-primary-indigo-hover: #262366;
+  --color-secondary-plum: #5B4B8A;
+  --color-secondary-plum-hover: #4B3C73;
+  --color-accent-coral: #D97757;
+  --color-accent-coral-hover: #B85F44;
+  --color-lavender-tint: #F0EEFA;
+  --color-lavender-tint-hover: #E4E0F5;
+  --color-warm-sand: #E7B76A;
+  --color-pale-sand: #FBF4E8;
+  --color-canvas: #F7F6F3;
+  --color-card: #FFFFFF;
+  --color-text-main: #27243A;
+  --color-text-secondary: #625F70;
+  --color-text-muted: #8E8B99;
+  --color-border: #E4E1E8;
+  --color-border-subtle: #ECE9F0;
+  --color-status-success: #3E7C68;
+  --color-status-success-bg: #EAF3EF;
+  --color-status-error: #B94A48;
+  --color-status-error-bg: #F9ECEB;
+  --color-focus-ring: #8B7BC4;
+
+  /* Aliases for semantic usage */
+  --color-nav-deep: #312E81;
+  --color-nav-container: #5B4B8A;
+  --color-surface-canvas: #F7F6F3;
   --color-surface-card: #FFFFFF;
-  --color-border-subtle: #D5D9D9;
-  --color-border-focus: #007185;
-  --color-text-primary: #0F1111;
-  --color-text-secondary: #565959;
-  --color-text-muted: #75777C;
-  --color-amazon-yellow: #FFD814;
-  --color-amazon-yellow-hover: #F7CA00;
-  --color-amazon-yellow-border: #FCD200;
-  --color-amazon-orange: #FF9900;
-  --color-amazon-orange-hover: #E68A00;
-  --color-link-teal: #007185;
-  --color-link-teal-hover: #C7511F;
-  --color-status-success: #067D62;
-  --color-status-alert: #B12704;
-  --color-status-warning: #C45500;
+  --color-border-subtle: #E4E1E8;
+  --color-text-primary: #27243A;
   --font-heading: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
   font-family: var(--font-body);
-  background-color: var(--color-surface-canvas);
-  color: var(--color-text-primary);
+  background-color: #F7F6F3;
+  color: #27243A;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -46,19 +55,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F3F3F3;
+  background: #F7F6F3;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #C5C6CC;
+  background: #E4E1E8;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #75777C;
+  background: #625F70;
 }
 
-/* ResolveAI AI Processing Animations */
+/* ResolveAI Processing Animations */
 @keyframes resolveai-pulse {
   0%, 100% {
     opacity: 1;
@@ -124,4 +133,3 @@ h1, h2, h3, h4, h5, h6 {
     transform: none !important;
   }
 }
-
