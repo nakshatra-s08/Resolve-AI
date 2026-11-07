@@ -61,6 +61,12 @@ export interface CaseCreatePayload {
   issue_description: string
 }
 
+export interface TranscriptionResponse {
+  transcript: string
+  detected_language?: string | null
+  model?: string | null
+}
+
 export interface CaseUpdatePayload {
   title?: string
   product_name?: string

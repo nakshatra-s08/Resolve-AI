@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-1.5-pro"
 
+    # Gnani Prisma Speech-to-Text Configuration
+    # Server-side API key for Gnani Prisma STT (vachana.ai)
+    # Add GNANI_PRISMA_API_KEY to your local backend/.env or .env file
+    GNANI_PRISMA_API_KEY: Optional[str] = None
+    GNANI_PRISMA_BASE_URL: str = "https://api.vachana.ai"
+    GNANI_PRISMA_MODEL: str = "prisma-v3.0"
+    GNANI_PRISMA_LANGUAGE_CODE: str = "indic-auto"
+    GNANI_PRISMA_TIMEOUT_SECONDS: float = 30.0
+
     # CORS origins allowed in local development
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
@@ -38,7 +47,7 @@ class Settings(BaseSettings):
     ]
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

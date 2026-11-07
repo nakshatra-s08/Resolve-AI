@@ -1,6 +1,6 @@
 # ResolveAI
 
-> **Personal repair-resolution agent** being developed for the Amazon Developer Hackathon.
+> **Consumer repair-resolution workspace** for organizing recurring product-repair problems, evidence, and next steps.
 > ResolveAI helps consumers manage recurring product-repair problems, starting with a laptop that develops the same fault again after two repair attempts.
 
 ---
@@ -17,6 +17,27 @@
 
 ### 4. Evidence Timeline
 ![Evidence Timeline](screenshots/evidence_timeline.jpeg)
+
+---
+
+## Voice-First Repair Intake (Gnani Prisma STT)
+
+ResolveAI provides a browser microphone voice intake workflow powered by **Gnani Prisma Speech-to-Text**:
+
+1. **Browser Microphone Recording**: When creating a new repair case, users can click the **"Record Voice"** button beside the Issue Description field. The browser requests microphone access via `getUserMedia` and records speech using `MediaRecorder`.
+2. **Audio Processing Seam**: Browser-recorded audio is converted to a mono WAV file and sent to `POST /api/voice/transcribe`. Audio is processed **strictly in memory** and discarded immediately; no recordings are persisted to disk or database.
+3. **Gnani Prisma v3 Integration**: The backend connects to Gnani's flagship multilingual model (`prisma-v3.0`) hosted at `https://api.vachana.ai/stt/v3` with the server-side `X-API-Key-ID` header. It utilizes `indic-auto` language detection supporting English, Hindi, and regional Indian languages with code-mixing.
+4. **Editable Transcript Review & Confirmation**: When transcription completes, the user reviews the machine-generated text in an editable preview. The user can correct any terms and must **explicitly confirm** the transcript before it is inserted into the case description. Manual typing remains fully available as a first-class alternative.
+5. **Human-in-the-Loop Safeguards**: If the API key is not yet configured, the system returns an honest `HTTP 503` configuration error prompting the developer to add `GNANI_PRISMA_API_KEY` to `backend/.env`, never simulating or fabricating a transcript.
+
+### API Key Configuration
+To activate live transcription:
+1. Open or create your local `backend/.env` file (or `.env` in the repository root).
+2. Add your Gnani API key:
+   ```bash
+   GNANI_PRISMA_API_KEY=your_gnani_api_key_here
+   ```
+3. The key is kept strictly server-side and never exposed to the frontend browser bundle.
 
 ---
 ## Backend — Phases 1 to 6: Core Agentic Workflow & Simulation
@@ -118,6 +139,7 @@ Open your browser to:
 | `POST` | `/api/cases/{case_id}/simulate-response` | Ingest a simulated service provider response and link to case/action |
 | `GET` | `/api/cases/{case_id}/responses` | List all simulated provider responses received for a case |
 | `POST` | `/api/cases/{case_id}/responses/{response_id}/process` | Analyze a provider response against case evidence and policy, producing findings |
+| `POST` | `/api/voice/transcribe` | Transcribe browser-recorded audio using Gnani Prisma v3 STT in-memory |
 
 ---
 

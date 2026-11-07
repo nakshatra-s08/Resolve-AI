@@ -17,6 +17,7 @@ import type {
   ResponseProcessingResult,
   PolicySourceRead,
   WorkflowState,
+  TranscriptionResponse,
 } from './types'
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api'
@@ -237,5 +238,15 @@ export const api = {
   // Policies
   async listPolicies(): Promise<PolicySourceRead[]> {
     return request<PolicySourceRead[]>('/policies')
+  },
+
+  // Voice Intake (Gnani Prisma STT)
+  async transcribeVoice(audioBlob: Blob, filename = 'recording.webm'): Promise<TranscriptionResponse> {
+    const formData = new FormData()
+    formData.append('file', audioBlob, filename)
+    return request<TranscriptionResponse>('/voice/transcribe', {
+      method: 'POST',
+      body: formData,
+    })
   },
 }

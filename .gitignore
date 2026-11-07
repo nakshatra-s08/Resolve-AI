@@ -31,6 +31,7 @@ backend/uploads/
 
 # Environment & secrets
 .env
+backend/.env
 .env.local
 .env.*.local
 
