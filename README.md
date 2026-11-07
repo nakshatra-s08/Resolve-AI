@@ -24,6 +24,20 @@ To activate live transcription:
 3. The key is kept strictly server-side and never exposed to the frontend browser bundle.
 
 ---
+
+## Vercel Deployment
+
+The root `vercel.json` deploys the Vite frontend at `/` and routes `/api/*` to the FastAPI backend. The browser uses same-origin `/api` requests, so no service binding or browser-visible backend URL is needed.
+
+Vercel Functions use an ephemeral filesystem. Configure Supabase Postgres and a private Supabase Storage bucket before deploying so cases and uploaded evidence persist:
+
+1. Create a Supabase project and a **private** Storage bucket named `case-evidence` (or set a different `SUPABASE_STORAGE_BUCKET`).
+2. In Vercel project environment variables, set `DATABASE_URL` to the Supabase Postgres connection string using the transaction pooler, `UPLOAD_STORAGE_BACKEND=supabase`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET=case-evidence`.
+3. Add `GNANI_PRISMA_API_KEY` to the Vercel backend environment. Never prefix server secrets with `VITE_` or commit them to Git.
+4. Set the Vercel project framework to **Services** and deploy from the repository root.
+
+The Supabase service role key is server-only and grants access to private evidence files. Do not expose it to frontend code. Supabase Free currently includes 500 MB of database and 1 GB of file storage, and pauses projects after one week of inactivity; review current quotas before relying on the deployment.
+
 ## Backend — Phases 1 to 6: Core Agentic Workflow & Simulation
 
 This repository contains the backend for ResolveAI, built with **Python**, **FastAPI**, **SQLAlchemy**, and **SQLite**.

@@ -10,6 +10,18 @@ settings = get_settings()
 DATABASE_URL = settings.DATABASE_URL
 
 
+def normalize_database_url(url: str) -> str:
+    """Use psycopg 3 for hosted Postgres URLs while keeping SQLite unchanged."""
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url.removeprefix("postgres://")
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url.removeprefix("postgresql://")
+    return url
+
+
+DATABASE_URL = normalize_database_url(DATABASE_URL)
+
+
 def ensure_sqlite_dir(url: str) -> None:
     """Ensure the directory for SQLite database files exists."""
     if url.startswith("sqlite:///"):
@@ -27,10 +39,17 @@ connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
 
+engine_options = {}
+if DATABASE_URL.startswith("postgresql+"):
+    # Keep the per-instance pool small for serverless function execution.
+    engine_options.update(pool_size=1, max_overflow=0, pool_pre_ping=True)
+    connect_args["prepare_threshold"] = None
+
 engine = create_engine(
     DATABASE_URL,
     connect_args=connect_args,
     future=True,
+    **engine_options,
 )
 
 SessionLocal = sessionmaker(
@@ -54,6 +73,10 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     """Initialize database tables."""
+    if os.getenv("VERCEL") and DATABASE_URL.startswith("sqlite"):
+        raise RuntimeError(
+            "Vercel requires a hosted DATABASE_URL. Configure Supabase Postgres; SQLite files are not persistent there."
+        )
     # Ensure tables are registered on Base before creating
     import app.models  # noqa: F401
     ensure_sqlite_dir(settings.DATABASE_URL)

@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # Uploads configuration
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
+    UPLOAD_STORAGE_BACKEND: str = "local"
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    SUPABASE_STORAGE_BUCKET: str = "case-evidence"
 
     # AI Reasoning Provider Configuration
     # Supported providers: "demo", "ollama", "openai", "gemini"
