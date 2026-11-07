@@ -4,22 +4,6 @@
 > ResolveAI helps consumers manage recurring product-repair problems, starting with a laptop that develops the same fault again after two repair attempts.
 
 ---
-## Screenshots
-
-### 1. ResolveAI Dashboard
-![ResolveAI Dashboard](screenshots/dashboard.jpeg)
-
-### 2. AI Assistant
-![AI Assistant and Evidence](screenshots/case_AI_assistance.jpeg)
-
-### 3. Action Approval and Workflow
-![Action Approval Workflow](screenshots/action_approval.jpeg)
-
-### 4. Evidence Timeline
-![Evidence Timeline](screenshots/evidence_timeline.jpeg)
-
----
-
 ## Voice-First Repair Intake (Gnani Prisma STT)
 
 ResolveAI provides a browser microphone voice intake workflow powered by **Gnani Prisma Speech-to-Text**:
